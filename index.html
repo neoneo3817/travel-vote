@@ -62,7 +62,8 @@
   </main>
 
   <script>
-    const PRESET_DATA = [
+    // 원본 데이터 변수명 그대로 유지
+    const accommodations = [
       { id: '1', category: '7nights', name: '1. Trafuns HOF 아파트', location: '볼차노', price: '190만', bedrooms: '2', beds: '2', bathrooms: '1', features: '발코니 뷰 끝내줌', url: 'https://www.trafunshof.com/en/online-booking', img: './1.jpg' },
       { id: '2', category: '7nights', name: '2. Innergost Hof 롯지', location: '볼차노', price: '170만', bedrooms: '2', beds: '2', bathrooms: '1', features: '발코니 뷰 끝내줌. 아직 예약 안열림', url: 'https://www.innergosthof.com/en/', img: './2.jpg' },
       { id: '3', category: '7nights', name: '3. Oberzerod 아파트', location: '볼차노', price: '220만', bedrooms: '2', beds: '2', bathrooms: '2', features: '발코니 뷰 끝내줌', url: 'https://www.oberzerod.com/en/living/panorama/', img: './3.jpg' },
@@ -107,7 +108,7 @@
 
     function renderAccommodations() {
       const listEl = document.getElementById('accommodationsList');
-      const filtered = PRESET_DATA.filter(item => item.category === currentCategory);
+      const filtered = accommodations.filter(item => item.category === currentCategory);
 
       listEl.innerHTML = filtered.map(item => `
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:border-indigo-300 transition">
@@ -155,7 +156,7 @@
     }
 
     function updateRankButtons() {
-      const filtered = PRESET_DATA.filter(item => item.category === currentCategory);
+      const filtered = accommodations.filter(item => item.category === currentCategory);
       filtered.forEach(item => {
         const btn1 = document.getElementById(`btn-1-${item.id}`);
         const btn2 = document.getElementById(`btn-2-${item.id}`);
@@ -200,7 +201,7 @@
 
     function renderResults() {
       const board = document.getElementById('resultsBoard');
-      const filteredAcc = PRESET_DATA.filter(a => a.category === currentCategory);
+      const filteredAcc = accommodations.filter(a => a.category === currentCategory);
       const categoryVotes = savedVotes.filter(v => v.category === currentCategory);
 
       let scores = {};
@@ -213,25 +214,4 @@
       });
 
       const sorted = filteredAcc.map(a => ({ ...a, score: scores[a.id] || 0 }))
-                                .sort((a, b) => b.score - a.score);
-
-      const maxScore = Math.max(...sorted.map(s => s.score), 1);
-
-      board.innerHTML = `
-        <div class="text-xs text-slate-500 mb-2">총 투표 참여: <span class="font-bold text-indigo-600">${categoryVotes.length}명</span></div>
-        ${sorted.map((item, idx) => `
-          <div class="space-y-1">
-            <div class="flex justify-between text-xs font-semibold">
-              <span class="truncate max-w-[150px]">${idx === 0 && item.score > 0 ? '👑 ' : ''}${item.name}</span>
-              <span class="text-indigo-600 font-bold">${item.score}점</span>
-            </div>
-            <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-              <div class="bg-indigo-600 h-2 rounded-full transition-all duration-300" style="width: ${(item.score / maxScore) * 100}%"></div>
-            </div>
-          </div>
-        `).join('')}
-      `;
-    }
-  </script>
-</body>
-</html>
+                                .sort
