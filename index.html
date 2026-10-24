@@ -92,7 +92,7 @@
           <input type="text" id="newBathrooms" placeholder="화장실 수" class="w-full p-2 border rounded">
         </div>
         <input type="text" id="newUrl" placeholder="예약 링크 URL" class="w-full p-2 border rounded">
-        <input type="text" id="newImg" placeholder="이미지 파일명 또는 URL (예: 16.jpg)" class="w-full p-2 border rounded">
+        <input type="text" id="newImg" placeholder="이미지 파일명 (예: 16.jpg)" class="w-full p-2 border rounded">
       </div>
       <div class="flex justify-end gap-2 mt-5">
         <button onclick="toggleAddModal()" class="px-3 py-1.5 text-xs text-slate-600">취소</button>
@@ -103,11 +103,11 @@
 
   <!-- App Script -->
   <script>
-    // 🔑 본인의 Supabase 키 정보를 입력해 주세요!
-    const DEFAULT_SUPABASE_URL = "https://baijljhvosorhnrcownc.supabase.co/rest/v1/";
+    // 🔑 사용자님의 Supabase 인증 정보가 완벽하게 세팅되었습니다.
+    const DEFAULT_SUPABASE_URL = "https://baijljhvosorhnrcownc.supabase.co";
     const DEFAULT_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhaWpsamh2b3NvcmhucmNvd25jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2OTY0MzksImV4cCI6MjEwODI3MjQzOX0.4uwxGwVmFzwaXsmd63xFNrBak21oITawwb8YEwl63lY";
 
-    // 깃허브에 올라간 1.jpg~15.jpg 파일 경로 매칭 완료
+    // 기본 안전장치용 15개 숙소 데이터 (사진 포함)
     const PRESET_ACCOMMODATIONS = [
       { id: '1', category: '7nights', name: '1. Trafuns HOF 아파트', location: '볼차노', price: '190만', bedrooms: '2', beds: '2', bathrooms: '1', features: '발코니 뷰 끝내줌', url: 'https://www.trafunshof.com/en/online-booking', img: './1.jpg' },
       { id: '2', category: '7nights', name: '2. Innergost Hof 롯지', location: '볼차노', price: '170만', bedrooms: '2', beds: '2', bathrooms: '1', features: '발코니 뷰 끝내줌. 아직 예약 안열림', url: 'https://www.innergosthof.com/en/', img: './2.jpg' },
@@ -119,59 +119,4 @@
       { id: '8', category: '7nights', name: '8. La Villa 아파트 (크레파츠)', location: '친퀘토리', price: '210만', bedrooms: '2', beds: '3', bathrooms: '1', features: '산악뷰 끝내주나 집 뒷편임', url: 'https://www.airbnb.co.kr/rooms/794028618594637814?viralityEntryPoint=1&s=76&check_in=2027-09-11&check_out=2027-09-18&guests=3&adults=3&children=0&infants=0&unique_share_id=6b6d33ad-3ca4-48bb-a6ff-117fdf70d0dd', img: './8.jpg' },
       { id: '9', category: '7nights', name: '9. San Ciascian 아파트 (알타 바디아)', location: '친퀘토리', price: '230만', bedrooms: '1', beds: '2', bathrooms: '1', features: '마당 잔디밭', url: 'https://www.airbnb.co.kr/rooms/1700733378054490736?viralityEntryPoint=1&s=76&check_in=2027-09-11&check_out=2027-09-18&guests=3&adults=3&children=0&infants=0&unique_share_id=b3cedb5c-7dea-41d4-a417-cd456b51debd', img: './9.jpg' },
       { id: '10', category: '7nights', name: '10. La Villa 아파트', location: '친퀘토리', price: '290만', bedrooms: '2', beds: '3', bathrooms: '1', features: '발코니 뷰 끝내줌', url: 'https://www.airbnb.co.kr/rooms/31139263?viralityEntryPoint=1&s=76&check_in=2027-09-11&check_out=2027-09-18&guests=3&adults=3&children=0&infants=0&unique_share_id=7a178115-3b7d-4c42-b13f-c09f9823aed1', img: './10.jpg' },
-      { id: '11', category: '3nights', name: '11. Fie allo Scillar 아파트 (오팔)', location: '볼차노', price: '120만', bedrooms: '1', beds: '2+소파베드1', bathrooms: '1', features: '정원뷰 좋음+완전 신식', url: 'https://www.airbnb.co.kr/rooms/655454393790746501?viralityEntryPoint=1&s=76&check_in=2027-09-18&check_out=2027-09-21&guests=3&adults=3&children=0&infants=0&unique_share_id=5552dba1-3d38-42be-ae28-d3e8572b2648', img: './11.jpg' },
-      { id: '12', category: '3nights', name: '12. Vols am Schlern 아파트', location: '볼차노', price: '150만', bedrooms: '2', beds: '3+소파베드1', bathrooms: '2', features: '부엌 산악뷰. 발코니 없음', url: 'https://www.airbnb.co.kr/rooms/39777287?viralityEntryPoint=1&s=76&check_in=2027-09-18&check_out=2027-09-21&guests=3&adults=3&children=0&infants=0&unique_share_id=066077d8-4f8c-4232-83e2-b5be2890d201', img: './12.jpg' },
-      { id: '13', category: '3nights', name: '13. Vols am Schlern 별장', location: '볼차노', price: '110만', bedrooms: '2', beds: '2+소파베드1', bathrooms: '1', features: '별장 전체 마당의 각종 뷰. 시골집 스타일', url: 'https://www.airbnb.co.kr/rooms/707028084921852031?viralityEntryPoint=1&s=76&check_in=2027-09-18&check_out=2027-09-21&guests=3&adults=3&children=0&infants=0&unique_share_id=0c22097d-c86a-4e0d-8713-2a5806c6d1fc', img: './13.jpg' },
-      { id: '14', category: '3nights', name: '14. Badia 아파트', location: '친퀘토리', price: '120만', bedrooms: '2', beds: '4', bathrooms: '2', features: '광폭 발코니 산악 사이드뷰', url: 'https://www.airbnb.co.kr/rooms/1170131398830189930?viralityEntryPoint=1&s=76&check_in=2027-09-18&check_out=2027-09-21&guests=3&adults=3&children=0&infants=0&unique_share_id=9a9cc0a6-42f5-4c35-b42d-a00a2c8e9e1d', img: './14.jpg' },
-      { id: '15', category: '3nights', name: '15. San Ciascian 아파트', location: '친퀘토리', price: '160만', bedrooms: '2', beds: '3+소파베드1', bathrooms: '1', features: '산악 사이드뷰', url: 'https://www.airbnb.co.kr/rooms/914397442379820144?viralityEntryPoint=1&s=76&check_in=2027-09-18&check_out=2027-09-21&guests=3&adults=3&children=0&infants=0&unique_share_id=64479d0f-8891-4e2b-b3a1-980e8f7e3395', img: './15.jpg' }
-    ];
-
-    let currentCategory = '7nights';
-    let supabaseClient = null;
-    let accommodations = [];
-    let votes = [];
-    let mySelection = { rank_1: null, rank_2: null, rank_3: null };
-
-    window.onload = function() {
-      if (DEFAULT_SUPABASE_URL && !DEFAULT_SUPABASE_URL.includes("여기에")) {
-        initSupabase(DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_ANON_KEY);
-      } else {
-        accommodations = PRESET_ACCOMMODATIONS;
-        renderAccommodations();
-        renderResults();
-      }
-    }
-
-    function initSupabase(url, key) {
-      try {
-        supabaseClient = supabase.createClient(url, key);
-        loadDataFromSupabase();
-        subscribeRealtime();
-      } catch (e) {
-        console.error("Supabase 연결 실패:", e);
-        accommodations = PRESET_ACCOMMODATIONS;
-        renderAccommodations();
-      }
-    }
-
-    async function loadDataFromSupabase() {
-      if (!supabaseClient) return;
-      
-      let { data: accData } = await supabaseClient.from('accommodations').select('*');
-      if (accData && accData.length > 0) {
-        accommodations = accData;
-      } else {
-        accommodations = PRESET_ACCOMMODATIONS;
-      }
-
-      let { data: voteData } = await supabaseClient.from('votes').select('*');
-      if (voteData) {
-        votes = voteData;
-      }
-
-      renderAccommodations();
-      renderResults();
-    }
-
-    function subscribeRealtime() {
-      if (!
+      { id: '11', category: '3nights', name: '11. Fie allo Scillar 아파트 (오팔)', location: '볼차노', price: '120만', bedrooms: '1', beds: '2+소파베드1', bathrooms: '1', features: '정원뷰 좋음+완전 신식', url: 'https://www.airbnb.co.kr/rooms/655454393790746501?viralityEntryPoint=1&s=76&check_in=2027-09-18&check_out=2027-09-21&guests=3&adults=3&children=0&infants=0&unique_share_id=5552dba1-3d38-42be-ae28-d3e8572b2648', img: './11.
