@@ -3,207 +3,100 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>여행 숙소 실시간 투표</title>
+  <title>돌로미티 숙소 투표</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="bg-slate-50 min-h-screen text-slate-800 pb-16">
+<body class="bg-slate-100 min-h-screen pb-20">
 
   <!-- Header -->
-  <header class="bg-indigo-600 text-white shadow-md">
-    <div class="max-w-4xl mx-auto p-4 flex justify-between items-center">
-      <h1 class="text-xl font-bold">🏔️ 돌로미티 숙소 결정 투표</h1>
-      <span id="statusBadge" class="text-xs bg-indigo-700 px-2.5 py-1 rounded-full border border-indigo-400">준비 중...</span>
+  <header class="bg-indigo-600 text-white p-4 shadow">
+    <div class="max-w-4xl mx-auto flex justify-between items-center">
+      <h1 class="text-lg font-bold">🏔️ 돌로미티 숙소 투표</h1>
+      <span class="text-xs bg-indigo-700 px-2 py-1 rounded">기본 모드</span>
     </div>
   </header>
 
-  <main class="max-w-4xl mx-auto p-4">
+  <main class="max-w-4xl mx-auto p-4 space-y-6">
     
-    <!-- User Input Section -->
-    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6">
-      <label class="block text-sm font-semibold text-slate-700 mb-2">👤 당신의 이름 (투표자 닉네임):</label>
-      <input type="text" id="userNameInput" placeholder="예: 홍길동" class="w-full md:w-64 p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
+    <!-- 사용자 이름 입력 -->
+    <div class="bg-white p-4 rounded-xl shadow-sm">
+      <label class="block text-sm font-semibold text-slate-700 mb-1">👤 투표자 이름:</label>
+      <input type="text" id="userNameInput" placeholder="이름을 입력하세요" class="w-full md:w-64 p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500">
     </div>
 
-    <!-- Category Tabs -->
-    <div class="flex border-b border-slate-200 mb-6 bg-white rounded-t-xl overflow-hidden shadow-sm">
-      <button id="tab7nights" onclick="switchCategory('7nights')" class="flex-1 py-3 px-4 font-bold text-center border-b-2 border-indigo-600 text-indigo-600">
-        🗓️ 7박 코스 (9/11 ~ 9/18)
-      </button>
-      <button id="tab3nights" onclick="switchCategory('3nights')" class="flex-1 py-3 px-4 font-bold text-center border-b-2 border-transparent text-slate-500 hover:text-slate-700">
-        🗓️ 3박 코스 (9/18 ~ 9/21)
-      </button>
+    <!-- 탭 메뉴 -->
+    <div class="flex bg-white rounded-t-xl overflow-hidden shadow-sm border-b">
+      <button id="btn7" onclick="changeTab('7nights')" class="flex-1 py-3 font-bold text-indigo-600 border-b-2 border-indigo-600">🗓️ 7박 코스 (9/11~9/18)</button>
+      <button id="btn3" onclick="changeTab('3nights')" class="flex-1 py-3 font-bold text-slate-500 border-b-2 border-transparent">🗓️ 3박 코스 (9/18~9/21)</button>
     </div>
 
-    <!-- Main Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      
-      <!-- Accommodations List & Vote Section -->
-      <div class="lg:col-span-2 space-y-4">
-        <div class="flex justify-between items-center">
-          <h2 class="text-lg font-bold text-slate-800">🏡 숙소 후보 리스트</h2>
-          <button onclick="toggleAddModal()" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-1.5 px-3 rounded-lg shadow-sm">
-            + 새 숙소 추가
-          </button>
-        </div>
-
-        <div id="accommodationsList" class="space-y-4">
-          <!-- 숙소 카드가 표시되는 공간 -->
-        </div>
-
-        <!-- Submit Vote Button -->
-        <div class="pt-4">
-          <button onclick="submitVote()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition">
-            🗳️ 선택한 순위로 투표 제출하기
-          </button>
-        </div>
-      </div>
-
-      <!-- Realtime Dashboard -->
-      <div class="lg:col-span-1">
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 sticky top-4">
-          <h2 class="text-lg font-bold text-slate-800 mb-3 flex items-center gap-2">
-            📊 실시간 투표 결과 
-            <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          </h2>
-          <div id="resultsBoard" class="space-y-3">
-            <!-- 투표 결과 집계가 표시되는 공간 -->
-          </div>
-        </div>
-      </div>
-
+    <!-- 숙소 리스트 출력 공간 -->
+    <div id="listContainer" class="space-y-4">
+      <!-- 자바스크립트가 여기에 숙소 카드를 강제로 꽂아넣습니다 -->
     </div>
+
   </main>
 
-  <!-- Modal: Add Accommodation -->
-  <div id="addModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
-      <h3 class="text-lg font-bold mb-3">➕ 새 숙소 추가</h3>
-      <div class="space-y-3 text-sm">
-        <input type="text" id="newName" placeholder="숙소 이름" class="w-full p-2 border rounded">
-        <input type="text" id="newLocation" placeholder="위치 (예: 볼차노)" class="w-full p-2 border rounded">
-        <div class="grid grid-cols-2 gap-2">
-          <input type="text" id="newPrice" placeholder="가격 (예: 200만)" class="w-full p-2 border rounded">
-          <input type="text" id="newFeatures" placeholder="특징 (예: 발코니 뷰)" class="w-full p-2 border rounded">
-        </div>
-        <div class="grid grid-cols-3 gap-2">
-          <input type="text" id="newBedrooms" placeholder="침실 수" class="w-full p-2 border rounded">
-          <input type="text" id="newBeds" placeholder="침대 수" class="w-full p-2 border rounded">
-          <input type="text" id="newBathrooms" placeholder="화장실 수" class="w-full p-2 border rounded">
-        </div>
-        <input type="text" id="newUrl" placeholder="예약 링크 URL" class="w-full p-2 border rounded">
-        <input type="text" id="newImg" placeholder="이미지 파일명 (예: 16.jpg)" class="w-full p-2 border rounded">
-      </div>
-      <div class="flex justify-end gap-2 mt-5">
-        <button onclick="toggleAddModal()" class="px-3 py-1.5 text-xs text-slate-600">취소</button>
-        <button onclick="addAccommodation()" class="px-4 py-1.5 text-xs bg-emerald-600 text-white rounded font-bold">등록하기</button>
-      </div>
-    </div>
-  </div>
-
   <script>
-    // Supabase 정보 (문자열 오차가 생기지 않도록 정돈)
-    const DEFAULT_SUPABASE_URL = "https://baijljhvosorhnrcownc.supabase.co";
-    const DEFAULT_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhaWpsamh2b3NvcmhucmNvd25jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2OTY0MzksImV4cCI6MjEwODI3MjQzOX0.4uwxGwVmFzwaXsmd63xFNrBak21oITawwb8YEwl63lY";
-
-    const PRESET_ACCOMMODATIONS = [
-      { id: '1', category: '7nights', name: '1. Trafuns HOF 아파트', location: '볼차노', price: '190만', bedrooms: '2', beds: '2', bathrooms: '1', features: '발코니 뷰 끝내줌', url: 'https://www.trafunshof.com/en/online-booking', img: './1.jpg' },
-      { id: '2', category: '7nights', name: '2. Innergost Hof 롯지', location: '볼차노', price: '170만', bedrooms: '2', beds: '2', bathrooms: '1', features: '발코니 뷰 끝내줌. 아직 예약 안열림', url: 'https://www.innergosthof.com/en/', img: './2.jpg' },
-      { id: '3', category: '7nights', name: '3. Oberzerod 아파트', location: '볼차노', price: '220만', bedrooms: '2', beds: '2', bathrooms: '2', features: '발코니 뷰 끝내줌', url: 'https://www.oberzerod.com/en/living/panorama/', img: './3.jpg' },
-      { id: '4', category: '7nights', name: '4. Seis am Schlern 콘도', location: '볼차노', price: '220만', bedrooms: '3', beds: '3', bathrooms: '1', features: '발코니 뷰 끝내줌', url: 'https://www.airbnb.co.kr/rooms/51579894', img: './4.jpg' },
-      { id: '5', category: '7nights', name: '5. Caprile-Alleghe 집', location: '볼차노', price: '250만', bedrooms: '2', beds: '3', bathrooms: '2', features: '발코니 산악뷰 끝내줌', url: 'https://www.airbnb.co.kr/rooms/1421801906851702421', img: './5.jpg' },
-      { id: '6', category: '7nights', name: '6. Pecol 살레', location: '볼차노', price: '310만', bedrooms: '3', beds: '3', bathrooms: '2', features: '발코니 산악뷰 좋음', url: 'https://www.airbnb.co.kr/rooms/45331024', img: './6.jpg' },
-      { id: '7', category: '7nights', name: '7. Sass Dlacia 캠핑장 롯지', location: '친퀘토리', price: '300만', bedrooms: '2', beds: '2+소파베드1', bathrooms: '1', features: '대형 캠핑장 각종 시설 사용 가능', url: 'https://campingsassdlacia.it/en', img: './7.jpg' },
-      { id: '8', category: '7nights', name: '8. La Villa 아파트 (크레파츠)', location: '친퀘토리', price: '210만', bedrooms: '2', beds: '3', bathrooms: '1', features: '산악뷰 끝내주나 집 뒷편임', url: 'https://www.airbnb.co.kr/rooms/794028618594637814', img: './8.jpg' },
-      { id: '9', category: '7nights', name: '9. San Ciascian 아파트 (알타 바디아)', location: '친퀘토리', price: '230만', bedrooms: '1', beds: '2', bathrooms: '1', features: '마당 잔디밭', url: 'https://www.airbnb.co.kr/rooms/1700733378054490736', img: './9.jpg' },
-      { id: '10', category: '7nights', name: '10. La Villa 아파트', location: '친퀘토리', price: '290만', bedrooms: '2', beds: '3', bathrooms: '1', features: '발코니 뷰 끝내줌', url: 'https://www.airbnb.co.kr/rooms/31139263', img: './10.jpg' },
-      { id: '11', category: '3nights', name: '11. Fie allo Scillar 아파트 (오팔)', location: '볼차노', price: '120만', bedrooms: '1', beds: '2+소파베드1', bathrooms: '1', features: '정원뷰 좋음+완전 신식', url: 'https://www.airbnb.co.kr/rooms/655454393790746501', img: './11.jpg' },
-      { id: '12', category: '3nights', name: '12. Vols am Schlern 아파트', location: '볼차노', price: '150만', bedrooms: '2', beds: '3+소파베드1', bathrooms: '2', features: '부엌 산악뷰.  발코니 없음', url: 'https://www.airbnb.co.kr/rooms/39777287', img: './12.jpg' },
-      { id: '13', category: '3nights', name: '13. Vols am Schlern 별장', location: '볼차노', price: '110만', bedrooms: '2', beds: '2+소파베드1', bathrooms: '1', features: '별장 전체 마당의 각종 뷰. 시골집 스타일', url: 'https://www.airbnb.co.kr/rooms/707028084921852031', img: './13.jpg' },
-      { id: '14', category: '3nights', name: '14. Badia 아파트', location: '친퀘토리', price: '120만', bedrooms: '2', beds: '4', bathrooms: '2', features: '광폭 발코니 산악 사이드뷰', url: 'https://www.airbnb.co.kr/rooms/1170131398830189930', img: './14.jpg' },
-      { id: '15', category: '3nights', name: '15. San Ciascian 아파트', location: '친퀘토리', price: '160만', bedrooms: '2', beds: '3+소파베드1', bathrooms: '1', features: '산악 사이드뷰', url: 'https://www.airbnb.co.kr/rooms/914397442379820144', img: './15.jpg' }
+    // 15개 숙소 데이터 (사진 파일명 포함)
+    const accommodations = [
+      { id: '1', category: '7nights', name: '1. Trafuns HOF 아파트', location: '볼차노', price: '190만', beds: '2', features: '발코니 뷰 끝내줌', url: 'https://www.trafunshof.com/en/online-booking', img: './1.jpg' },
+      { id: '2', category: '7nights', name: '2. Innergost Hof 롯지', location: '볼차노', price: '170만', beds: '2', features: '발코니 뷰 끝내줌. 예약 대기', url: 'https://www.innergosthof.com/en/', img: './2.jpg' },
+      { id: '3', category: '7nights', name: '3. Oberzerod 아파트', location: '볼차노', price: '220만', beds: '2', features: '발코니 뷰 끝내줌', url: 'https://www.oberzerod.com/en/living/panorama/', img: './3.jpg' },
+      { id: '4', category: '7nights', name: '4. Seis am Schlern 콘도', location: '볼차노', price: '220만', beds: '3', features: '발코니 뷰 끝내줌', url: 'https://www.airbnb.co.kr/rooms/51579894', img: './4.jpg' },
+      { id: '5', category: '7nights', name: '5. Caprile-Alleghe 집', location: '볼차노', price: '250만', beds: '3', features: '발코니 산악뷰 끝내줌', url: 'https://www.airbnb.co.kr/rooms/1421801906851702421', img: './5.jpg' },
+      { id: '6', category: '7nights', name: '6. Pecol 살레', location: '볼차노', price: '310만', beds: '3', features: '발코니 산악뷰 좋음', url: 'https://www.airbnb.co.kr/rooms/45331024', img: './6.jpg' },
+      { id: '7', category: '7nights', name: '7. Sass Dlacia 캠핑장 롯지', location: '친퀘토리', price: '300만', beds: '2+소파베드', features: '대형 캠핑장 시설 사용 가능', url: 'https://campingsassdlacia.it/en', img: './7.jpg' },
+      { id: '8', category: '7nights', name: '8. La Villa 아파트 (크레파츠)', location: '친퀘토리', price: '210만', beds: '3', features: '산악뷰 끝내주나 집 뒷편임', url: 'https://www.airbnb.co.kr/rooms/794028618594637814', img: './8.jpg' },
+      { id: '9', category: '7nights', name: '9. San Ciascian 아파트 (알타 바디아)', location: '친퀘토리', price: '230만', beds: '2', features: '마당 잔디밭', url: 'https://www.airbnb.co.kr/rooms/1700733378054490736', img: './9.jpg' },
+      { id: '10', category: '7nights', name: '10. La Villa 아파트', location: '친퀘토리', price: '290만', beds: '3', features: '발코니 뷰 끝내줌', url: 'https://www.airbnb.co.kr/rooms/31139263', img: './10.jpg' },
+      { id: '11', category: '3nights', name: '11. Fie allo Scillar 아파트 (오팔)', location: '볼차노', price: '120만', beds: '2+소파베드', features: '정원뷰 좋음+완전 신식', url: 'https://www.airbnb.co.kr/rooms/655454393790746501', img: './11.jpg' },
+      { id: '12', category: '3nights', name: '12. Vols am Schlern 아파트', location: '볼차노', price: '150만', beds: '3+소파베드', features: '부엌 산악뷰. 발코니 없음', url: 'https://www.airbnb.co.kr/rooms/39777287', img: './12.jpg' },
+      { id: '13', category: '3nights', name: '13. Vols am Schlern 별장', location: '볼차노', price: '110만', beds: '2+소파베드', features: '시골집 스타일, 마당 뷰', url: 'https://www.airbnb.co.kr/rooms/707028084921852031', img: './13.jpg' },
+      { id: '14', category: '3nights', name: '14. Badia 아파트', location: '친퀘토리', price: '120만', beds: '4', features: '광폭 발코니 산악 사이드뷰', url: 'https://www.airbnb.co.kr/rooms/1170131398830189930', img: './14.jpg' },
+      { id: '15', category: '3nights', name: '15. San Ciascian 아파트', location: '친퀘토리', price: '160만', beds: '3+소파베드', features: '산악 사이드뷰', url: 'https://www.airbnb.co.kr/rooms/914397442379820144', img: './15.jpg' }
     ];
 
-    let currentCategory = '7nights';
-    let supabaseClient = null;
-    let accommodations = [...PRESET_ACCOMMODATIONS];
-    let votes = [];
-    let mySelection = { rank_1: null, rank_2: null, rank_3: null };
+    let currentTab = '7nights';
 
-    // 안전하게 초기 화면부터 무조건 그리는 로직
-    document.addEventListener('DOMContentLoaded', function() {
-      try {
-        renderAccommodations();
-        renderResults();
-        initSupabase();
-      } catch (err) {
-        console.error("초기화 중 오류 발생:", err);
-      }
-    });
+    // 페이지 켜지자마자 실행
+    window.onload = function() {
+      renderList();
+    };
 
-    function initSupabase() {
-      const badge = document.getElementById('statusBadge');
-      try {
-        if (typeof supabase !== 'undefined') {
-          supabaseClient = supabase.createClient(DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_ANON_KEY);
-          if (badge) badge.innerText = "실시간 연동중 🟢";
-          loadDataFromSupabase();
-        } else {
-          if (badge) badge.innerText = "기본 모드 🟡";
-        }
-      } catch (e) {
-        console.error("Supabase 초기화 실패:", e);
-        if (badge) badge.innerText = "기본 모드 🟡";
-      }
+    function changeTab(tab) {
+      currentTab = tab;
+      document.getElementById('btn7').className = tab === '7nights' ? "flex-1 py-3 font-bold text-indigo-600 border-b-2 border-indigo-600" : "flex-1 py-3 font-bold text-slate-500 border-b-2 border-transparent";
+      document.getElementById('btn3').className = tab === '3nights' ? "flex-1 py-3 font-bold text-indigo-600 border-b-2 border-indigo-600" : "flex-1 py-3 font-bold text-slate-500 border-b-2 border-transparent";
+      renderList();
     }
 
-    async function loadDataFromSupabase() {
-      if (!supabaseClient) return;
-      try {
-        let { data: accData } = await supabaseClient.from('accommodations').select('*');
-        if (accData && accData.length > 0) {
-          accommodations = accData;
-        }
-        let { data: voteData } = await supabaseClient.from('votes').select('*');
-        if (voteData) {
-          votes = voteData;
-        }
-        renderAccommodations();
-        renderResults();
-      } catch (err) {
-        console.warn("DB 로드 실패 (기본 데이터 유지):", err);
-      }
+    function renderList() {
+      const container = document.getElementById('listContainer');
+      const filtered = accommodations.filter(item => item.category === currentTab);
+
+      container.innerHTML = filtered.map(item => `
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-slate-200">
+          <div class="h-48 bg-slate-100">
+            <img src="${item.img}" alt="${item.name}" class="w-full h-full object-cover" onerror="this.src='https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80'">
+          </div>
+          <div class="p-4 space-y-2">
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-600 font-semibold">${item.location}</span>
+                <h3 class="font-bold text-base text-slate-800 inline ml-1">${item.name}</h3>
+              </div>
+              <span class="text-indigo-600 font-bold">${item.price}</span>
+            </div>
+            <p class="text-xs text-slate-600 bg-slate-50 p-2 rounded">✨ ${item.features}</p>
+            <div class="flex justify-between items-center text-xs text-slate-500 pt-2 border-t">
+              <span>🛏️ 침대: ${item.beds}</span>
+              <a href="${item.url}" target="_blank" class="text-indigo-600 font-bold underline">숙소 상세 보기 🔗</a>
+            </div>
+          </div>
+        </div>
+      `).join('');
     }
-
-    function switchCategory(cat) {
-      currentCategory = cat;
-      mySelection = { rank_1: null, rank_2: null, rank_3: null };
-      
-      const tab7 = document.getElementById('tab7nights');
-      const tab3 = document.getElementById('tab3nights');
-
-      if (tab7) tab7.className = cat === '7nights' 
-        ? "flex-1 py-3 px-4 font-bold text-center border-b-2 border-indigo-600 text-indigo-600"
-        : "flex-1 py-3 px-4 font-bold text-center border-b-2 border-transparent text-slate-500 hover:text-slate-700";
-      
-      if (tab3) tab3.className = cat === '3nights' 
-        ? "flex-1 py-3 px-4 font-bold text-center border-b-2 border-indigo-600 text-indigo-600"
-        : "flex-1 py-3 px-4 font-bold text-center border-b-2 border-transparent text-slate-500 hover:text-slate-700";
-
-      renderAccommodations();
-      renderResults();
-    }
-
-    function renderAccommodations() {
-      const listEl = document.getElementById('accommodationsList');
-      if (!listEl) return;
-
-      const filtered = accommodations.filter(a => a.category === currentCategory);
-
-      if (filtered.length === 0) {
-        listEl.innerHTML = `<div class="p-8 text-center text-slate-400">등록된 숙소가 없습니다.</div>`;
-        return;
-      }
-
-      listEl.innerHTML = filtered.map(item => `
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:border-indigo-300 transition">
+  </script>
+</body>
+</html>
