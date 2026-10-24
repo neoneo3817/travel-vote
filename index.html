@@ -71,29 +71,4 @@
       { id: '6', category: '7nights', name: '6. Pecol 살레', location: '볼차노', price: '310만', bedrooms: '3', beds: '3', bathrooms: '2', features: '발코니 산악뷰 좋음', url: 'https://www.airbnb.co.kr/rooms/45331024', img: './6.jpg' },
       { id: '7', category: '7nights', name: '7. Sass Dlacia 캠핑장 롯지', location: '친퀘토리', price: '300만', bedrooms: '2', beds: '2+소파베드1', bathrooms: '1', features: '대형 캠핑장 각종 시설 사용 가능', url: 'https://campingsassdlacia.it/en', img: './7.jpg' },
       { id: '8', category: '7nights', name: '8. La Villa 아파트 (크레파츠)', location: '친퀘토리', price: '210만', bedrooms: '2', beds: '3', bathrooms: '1', features: '산악뷰 끝내주나 집 뒷편임', url: 'https://www.airbnb.co.kr/rooms/794028618594637814', img: './8.jpg' },
-      { id: '9', category: '7nights', name: '9. San Ciascian 아파트 (알타 바디아)', location: '친퀘토리', price: '230만', bedrooms: '1', beds: '2', bathrooms: '1', features: '마당 잔디밭', url: 'https://www.airbnb.co.kr/rooms/1700733378054490736', img: './9.jpg' },
-      { id: '10', category: '7nights', name: '10. La Villa 아파트', location: '친퀘토리', price: '290만', bedrooms: '2', beds: '3', bathrooms: '1', features: '발코니 뷰 끝내줌', url: 'https://www.airbnb.co.kr/rooms/31139263', img: './10.jpg' },
-      { id: '11', category: '3nights', name: '11. Fie allo Scillar 아파트 (오팔)', location: '볼차노', price: '120만', bedrooms: '1', beds: '2+소파베드1', bathrooms: '1', features: '정원뷰 좋음+완전 신식', url: 'https://www.airbnb.co.kr/rooms/655454393790746501', img: './11.jpg' },
-      { id: '12', category: '3nights', name: '12. Vols am Schlern 아파트', location: '볼차노', price: '150만', bedrooms: '2', beds: '3+소파베드1', bathrooms: '2', features: '부엌 산악뷰. 발코니 없음', url: 'https://www.airbnb.co.kr/rooms/39777287', img: './12.jpg' },
-      { id: '13', category: '3nights', name: '13. Vols am Schlern 별장', location: '볼차노', price: '110만', bedrooms: '2', beds: '2+소파베드1', bathrooms: '1', features: '별장 전체 마당의 각종 뷰. 시골집 스타일', url: 'https://www.airbnb.co.kr/rooms/707028084921852031', img: './13.jpg' },
-      { id: '14', category: '3nights', name: '14. Badia 아파트', location: '친퀘토리', price: '120만', bedrooms: '2', beds: '4', bathrooms: '2', features: '광폭 발코니 산악 사이드뷰', url: 'https://www.airbnb.co.kr/rooms/1170131398830189930', img: './14.jpg' },
-      { id: '15', category: '3nights', name: '15. San Ciascian 아파트', location: '친퀘토리', price: '160만', bedrooms: '2', beds: '3+소파베드1', bathrooms: '1', features: '산악 사이드뷰', url: 'https://www.airbnb.co.kr/rooms/914397442379820144', img: './15.jpg' }
-    ];
-
-    let currentCategory = '7nights';
-    let mySelection = { rank_1: null, rank_2: null, rank_3: null };
-    let savedVotes = [];
-
-    // 실행 초기화
-    window.addEventListener('DOMContentLoaded', function() {
-      renderAccommodations();
-      renderResults();
-    });
-
-    function switchCategory(cat) {
-      currentCategory = cat;
-      mySelection = { rank_1: null, rank_2: null, rank_3: null };
-
-      document.getElementById('tab7nights').className = cat === '7nights' 
-        ? "flex-1 py-3 font-bold text-center border-b-2 border-indigo-600 text-indigo-600 cursor-pointer"
-        : "flex-1 py-3 font-bold text-center border-b-2 border-transparent text-slate-50
+      { id: '9', category: '7nights', name: '9. San Ciascian 아파트 (알타 바디아)', location: '친퀘토리', price: '230만', bedrooms: '1', beds: '2', bathrooms: '1', features: '마당 잔디밭', url: '
