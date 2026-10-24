@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>여행 숙소 투표 & 실시간 확정</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Supabase JS Client (v2) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap');
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen pb-16">
+
+  <!-- Header & Config Banner -->
+  <header class="bg-slate-900 text-white shadow-lg sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+      <div class="flex items-center gap-3">
+        <div class="p-2 bg-indigo-600 rounded-xl shadow-inner">
+          <i data-lucide="home" class="w-6 h-6 text-white"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight">돌로미티 여행 숙소 투표</h1>
+          <p class="text-xs text-slate-400">실시간 순위 집계 & 친구들과 함께 뽑는 최고의 숙소</p>
+        </div>
+      </div>
+
+      <!-- Settings Dropdown Toggle -->
+      <button onclick="toggleConfigModal()" class="flex items-center gap-2 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg border border-slate-700 transition">
+        <i data-lucide="key" class="w-4 h-4 text-amber-400"></i>
+        <span>Supabase 연동 설정</span>
+        <span id="config-status-badge" class="w-2 h-2 rounded-full bg-red-500"></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-4 py-6">
+
+    <!-- Not Configured Alert Notice -->
+    <div id="unconfigured-alert" class="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-xl shadow-sm mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div class="flex items-start gap-3">
+        <i data-lucide="alert-triangle" class="w-6 h-6 text-amber-600 shrink-0 mt-0.5"></i>
+        <div>
+          <h3 class="font-semibold text-amber-900 text-sm">Supabase 접속 정보가 필요합니다</h3>
+          <p class="text-xs text-amber-700 mt-0.5">상단의 [Supabase 연동 설정] 버튼을 눌러 프로젝트 URL과 Anon Key를 입력해 주세요.</p>
+        </div>
+      </div>
+      <button onclick="toggleConfigModal()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium px-4 py-2 rounded-lg shadow transition whitespace-nowrap">
+        설정하기
+      </button>
+    </div>
+
+    <!-- User & Voting Controls -->
+    <div class="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-slate-200/80 mb-6 space-y-4">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+        
+        <!-- Category Tabs -->
+        <div class="flex p-1 bg-slate-100 rounded-xl max-w-md w-full">
+          <button id="tab-7nights" onclick="switchCategory('7nights')" class="flex-1 py-2.5 px-4 text-xs md:text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2 bg-white text-indigo-600 shadow-sm">
+            <i data-lucide="calendar" class="w-4 h-4"></i>
+            7박 코스 (9/11~9/18)
+          </button>
+          <button id="tab-3nights" onclick="switchCategory('3nights')" class="flex-1 py-2.5 px-4 text-xs md:text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-2 text-slate-500 hover:text-slate-800">
+            <i data-lucide="clock" class="w-4 h-4"></i>
+            3박 코스 (9/18~9/21)
+          </button>
+        </div>
+
+        <!-- User Name Input -->
+        <div class="flex items-center gap-3 bg-slate-50 p-2.5 px-4 rounded-xl border border-slate-200 w-full md:w-auto">
+          <i data-lucide="user" class="w-4 h-4 text-slate-400"></i>
+          <label class="text-xs font-medium text-slate-500 whitespace-nowrap">내 이름 / 닉네임:</label>
+          <input type="text" id="user-name-input" placeholder="이름을 입력하세요" onchange="saveUserName()" class="bg-transparent text-sm font-semibold text-slate-800 focus:outline-none w-full md:w-36">
+        </div>
+      </div>
+
+      <!-- Action Row -->
+      <div class="flex flex-wrap items-center justify-between gap-3 pt-1">
+        <div class="flex items-center gap-2 text-xs text-slate-500">
+          <i data-lucide="info" class="w-4 h-4 text-indigo-500"></i>
+          <span>투표 방식: <strong>1등 = 3점</strong>, <strong>2등 = 2점</strong>, <strong>3등 = 1점</strong> 부여</span>
+        </div>
+        <button onclick="openAddModal()" class="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-md shadow-indigo-100 transition">
+          <i data-lucide="plus" class="w-4 h-4"></i>
+          새 숙소 추가
+        </button>
+      </div>
+    </div>
+
+    <!-- Live Leaderboard Dashboard -->
+    <section class="bg-gradient-to-br from-indigo-900 to-slate-900 text-white rounded-2xl p-5 md:p-6 shadow-xl mb-8">
+      <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-700/60">
+        <div class="flex items-center gap-2">
+          <i data-lucide="trophy" class="w-5 h-5 text-amber-400"></i>
+          <h2 class="font-bold text-base md:text-lg">실시간 투표 현황 & 순위</h2>
+        </div>
+        <span id="vote-count-badge" class="text-xs bg-slate-800 text-indigo-300 border border-slate-700 px-3 py-1 rounded-full">
+          총 0명 투표 완료
+        </span>
+      </div>
+
+      <!-- Leaderboard Bars Grid -->
+      <div id="leaderboard-container" class="space-y-3">
+        <!-- Rendered Dynamically -->
+        <p class="text-xs text-slate-400 text-center py-4">데이터를 불러오는 중입니다...</p>
+      </div>
+    </section>
+
+    <!-- Accommodations List Header -->
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+        <i data-lucide="building" class="w-5 h-5 text-indigo-600"></i>
+        숙소 목록 <span id="accommodation-count" class="text-xs bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full">0개</span>
+      </h3>
+    </div>
+
+    <!-- Accommodations Grid -->
+    <div id="accommodations-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- Rendered Dynamically -->
+    </div>
+
+  </main>
+
+  <!-- Modals -->
+
+  <!-- 1. Supabase Config Modal -->
+  <div id="config-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+          <i data-lucide="database" class="w-5 h-5 text-indigo-600"></i>
+          Supabase 연동 설정
+        </h3>
+        <button onclick="toggleConfigModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <p class="text-xs text-slate-500 mb-4">Supabase 프로젝트 Settings > API 메뉴에서 복사한 정보를 입력해 주세요.</p>
+      
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Supabase URL (Data API URL)</label>
+          <input type="text" id="cfg-url" placeholder="https://xxxx.supabase.co" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Anon Public Key</label>
+          <input type="text" id="cfg-key" placeholder="eyJhbGciOiJIUzI1NiI..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        </div>
+      </div>
+
+      <div class="mt-6 flex justify-end gap-2">
+        <button onclick="toggleConfigModal()" class="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg">취소</button>
+        <button onclick="saveConfig()" class="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow">저장 및 연결</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Add / Edit Accommodation Modal -->
+  <div id="acc-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-4">
+        <h3 id="acc-modal-title" class="text-base font-bold text-slate-800">새 숙소 추가</h3>
+        <button onclick="closeAccModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <form id="acc-form" onsubmit="handleSaveAccommodation(event)" class="space-y-3">
+        <input type="hidden" id="form-acc-id">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">코스 카테고리</label>
+          <select id="form-acc-category" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            <option value="7nights">7박 코스 (9/11~9/18)</option>
+            <option value="3nights">3박 코스 (9/18~9/21)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">숙소 명칭 *</label>
+          <input type="text" id="form-acc-name" required placeholder="예: Trafuns HOF 아파트" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">지역/위치</label>
+            <input type="text" id="form-acc-location" placeholder="예: 볼차노" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">예상 가격</label>
+            <input type="text" id="form-acc-price" placeholder="예: 190만" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">침실 수</label>
+            <input type="text" id="form-acc-bedrooms" placeholder="2" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">침대 수</label>
+            <input type="text" id="form-acc-beds" placeholder="2" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">욕실 수</label>
+            <input type="text" id="form-acc-bathrooms" placeholder="1" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">특징 및 메모</label>
+          <textarea id="form-acc-features" rows="2" placeholder="발코니 뷰 끝내줌 등" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">예약/상세페이지 URL</label>
+          <input type="url" id="form-acc-url" placeholder="https://..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        </div>
+
+        <div class="mt-6 flex justify-end gap-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="closeAccModal()" class="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg">취소</button>
+          <button type="submit" class="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow">저장하기</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- JavaScript App Logic -->
+  <script>
+    // State Variables
+    let currentCategory = '7nights';
+    let supabaseClient = null;
+    let accommodations = [];
+    let votes = [];
+    let currentUserName = localStorage.getItem('voting_user_name') || '';
+
+    // Initialize UI on load
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('user-name-input').value = currentUserName;
+      initIcons();
+      loadSavedConfig();
+    });
+
+    function initIcons() {
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // Config & Supabase Initialization
+    function loadSavedConfig() {
+      const url = localStorage.getItem('supabase_url');
+      const key = localStorage.getItem('supabase_key');
+
+      if (url) document.getElementById('cfg-url').value = url;
+      if (key) document.getElementById('cfg-key').value = key;
+
+      if (url && key) {
+        try {
+          supabaseClient = supabase.createClient(url, key);
+          document.getElementById('config-status-badge').className = "w-2 h-2 rounded-full bg-emerald-500";
+          document.getElementById('unconfigured-alert').classList.add('hidden');
+          
+          fetchData();
+          subscribeRealtime();
+        } catch (e) {
+          console.error("Supabase Init Error:", e);
+          document.getElementById('config-status-badge').className = "w-2 h-2 rounded-full bg-red-500";
+        }
+      } else {
+        document.getElementById('unconfigured-alert').classList.remove('hidden');
+      }
+    }
+
+    function saveConfig() {
+      const url = document.getElementById('cfg-url').value.trim();
+      const key = document.getElementById('cfg-key').value.trim();
+
+      if (!url || !key) {
+        alert("Supabase URL과 Anon Key를 모두 입력해주세요.");
+        return;
+      }
+
+      localStorage.setItem('supabase_url', url);
+      localStorage.setItem('supabase_key', key);
+      toggleConfigModal();
+      loadSavedConfig();
+    }
+
+    function toggleConfigModal() {
+      const modal = document.getElementById('config-modal');
+      modal.classList.toggle('hidden');
+    }
+
+    // Category Switcher
+    function switchCategory(cat) {
+      currentCategory = cat;
+      const btn7 = document.getElementById('tab-7nights');
+      const btn3 = document.getElementById('tab-3nights');
+
+      if (cat === '7nights') {
+        btn7.className = "flex-1 py-2.5 px-4 text-xs md:text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2 bg-white text-indigo-600 shadow-sm";
+        btn3.className = "flex-1 py-2.5 px-4 text-xs md:text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-2 text-slate-500 hover:text-slate-800";
+      } else {
+        btn3.className = "flex-1 py-2.5 px-4 text-xs md:text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2 bg-white text-indigo-600 shadow-sm";
+        btn7.className = "flex-1 py-2.5 px-4 text-xs md:text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-2 text-slate-500 hover:text-slate-800";
+      }
+
+      renderAll();
+    }
+
+    function saveUserName() {
+      const val = document.getElementById('user-name-input').value.trim();
+      currentUserName = val;
+      localStorage.setItem('voting_user_name', val);
+      renderAll();
+    }
+
+    // Data Fetching
+    async function fetchData() {
+      if (!supabaseClient) return;
+
+      try {
+        // Fetch Accommodations
+        const { data: accData, error: accErr } = await supabaseClient
+          .from('accommodations')
+          .select('*')
+          .order('created_at', { ascending: true });
+
+        if (accErr) throw accErr;
+        accommodations = accData || [];
+
+        // Fetch Votes
+        const { data: voteData, error: voteErr } = await supabaseClient
+          .from('votes')
+          .select('*');
+
+        if (voteErr) throw voteErr;
+        votes = voteData || [];
+
+        renderAll();
+      } catch (err) {
+        console.error("데이터 로드 오류:", err);
+      }
+    }
+
+    // Realtime Subscriptions
+    function subscribeRealtime() {
+      if (!supabaseClient) return;
+
+      supabaseClient
+        .channel('public:accommodations')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'accommodations' }, () => fetchData())
+        .subscribe();
+
+      supabaseClient
+        .channel('public:votes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'votes' }, () => fetchData())
+        .subscribe();
+    }
+
+    // Rendering Logic
+    function renderAll() {
+      renderLeaderboard();
+      renderAccommodations();
+    }
+
+    function renderLeaderboard() {
+      const container = document.getElementById('leaderboard-container');
+      const filteredAccs = accommodations.filter(a => a.category === currentCategory);
+      const filteredVotes = votes.filter(v => v.category === currentCategory);
+
+      document.getElementById('vote-count-badge').innerText = `총 ${filteredVotes.length}명 투표 완료`;
+
+      if (filteredAccs.length === 0) {
+        container.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">등록된 숙소가 없습니다.</p>`;
+        return;
+      }
+
+      // Calculate Scores
+      const scores = {};
+      filteredAccs.forEach(a => scores[a.id] = { acc: a, score: 0, rank1Count: 0 });
+
+      filteredVotes.forEach(v => {
+        if (v.rank_1 && scores[v.rank_1]) { scores[v.rank_1].score += 3; scores[v.rank_1].rank1Count += 1; }
+        if (v.rank_2 && scores[v.rank_2]) { scores[v.rank_2].score += 2; }
+        if (v.rank_3 && scores[v.rank_3]) { scores[v.rank_3].score += 1; }
+      });
+
+      const sorted = Object.values(scores).sort((a, b) => b.score - a.score || b.rank1Count - a.rank1Count);
+      const maxScore = Math.max(...sorted.map(s => s.score), 1);
+
+      container.innerHTML = sorted.map((item, idx) => {
+        const percent = Math.min(Math.round((item.score / maxScore) * 100), 100);
+        const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}위`;
+        
+        return `
+          <div class="flex items-center gap-3 text-xs">
+            <span class="font-bold w-7 text-center ${idx === 0 ? 'text-amber-400 text-sm' : 'text-slate-400'}">${medal}</span>
+            <div class="flex-1">
+              <div class="flex justify-between mb-1">
+                <span class="font-semibold text-slate-200 truncate max-w-[200px] sm:max-w-md">${item.acc.name}</span>
+                <span class="font-bold text-amber-300">${item.score} 점</span>
+              </div>
+              <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                <div class="bg-gradient-to-r from-indigo-500 to-amber-400 h-2 rounded-full transition-all duration-500" style="width: ${percent}%"></div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderAccommodations() {
+      const grid = document.getElementById('accommodations-grid');
+      const filtered = accommodations.filter(a => a.category === currentCategory);
+
+      document.getElementById('accommodation-count').innerText = `${filtered.length}개`;
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full text-center py-12 bg-white rounded-2xl border border-dashed border-slate-300">
+            <i data-lucide="building" class="w-10 h-10 text-slate-300 mx-auto mb-2"></i>
+            <p class="text-sm font-medium text-slate-500">등록된 숙소가 없습니다.</p>
+            <button onclick="openAddModal()" class="mt-3 text-xs bg-indigo-50 text-indigo-600 font-semibold px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition">
+              + 첫 숙소 추가하기
+            </button>
+          </div>
+        `;
+        initIcons();
+        return;
+      }
+
+      // Find Current User's Vote for this category
+      const myVote = votes.find(v => v.category === currentCategory && v.user_name === currentUserName);
+
+      grid.innerHTML = filtered.map((acc, index) => {
+        const isRank1 = myVote?.rank_1 === acc.id;
+        const isRank2 = myVote?.rank_2 === acc.id;
+        const isRank3 = myVote?.rank_3 === acc.id;
+
+        return `
+          <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80 flex flex-col justify-between hover:shadow-md transition">
+            <div>
+              <!-- Card Header -->
+              <div class="flex justify-between items-start gap-2 mb-3">
+                <div class="flex items-center gap-2">
+                  <span class="bg-slate-100 text-slate-700 text-xs font-bold px-2.5 py-1 rounded-lg">#${index + 1}</span>
+                  <h4 class="font-bold text-slate-800 text-sm sm:text-base leading-snug">${acc.name}</h4>
+                </div>
+                <div class="flex items-center gap-1">
+                  <button onclick="openEditModal('${acc.id}')" class="p-1 text-slate-400 hover:text-indigo-600 transition" title="수정">
+                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                  </button>
+                  <button onclick="deleteAccommodation('${acc.id}')" class="p-1 text-slate-400 hover:text-red-500 transition" title="삭제">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Badges Info -->
+              <div class="flex flex-wrap gap-1.5 mb-3 text-[11px]">
+                ${acc.location ? `<span class="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-md font-medium"><i data-lucide="map-pin" class="w-3 h-3 inline -mt-0.5"></i> ${acc.location}</span>` : ''}
+                ${acc.price ? `<span class="bg-amber-50 text-amber-700 px-2 py-0.5 rounded-md font-medium">💰 ${acc.price}</span>` : ''}
+                ${acc.bedrooms ? `<span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">🛏️ 방 ${acc.bedrooms}</span>` : ''}
+                ${acc.beds ? `<span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">🛌 침대 ${acc.beds}</span>` : ''}
+                ${acc.bathrooms ? `<span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">🚿 욕실 ${acc.bathrooms}</span>` : ''}
+              </div>
+
+              <!-- Features Text -->
+              ${acc.features ? `<p class="text-xs text-slate-600 mb-4 bg-slate-50 p-2.5 rounded-xl border border-slate-100">${acc.features}</p>` : ''}
+            </div>
+
+            <div class="space-y-3 pt-3 border-t border-slate-100">
+              <!-- Link Button -->
+              ${acc.url ? `
+                <a href="${acc.url}" target="_blank" rel="noopener noreferrer" class="w-full flex items-center justify-center gap-1.5 text-xs text-slate-700 bg-slate-100 hover:bg-slate-200 py-2 rounded-xl font-medium transition">
+                  <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                  숙소 상세 정보 / 예약 링크
+                </a>
+              ` : ''}
+
+              <!-- Vote Buttons -->
+              <div class="grid grid-cols-3 gap-1.5">
+                <button onclick="handleVote('${acc.id}', 1)" class="py-2 text-xs font-semibold rounded-xl transition ${isRank1 ? 'bg-amber-500 text-white shadow-md' : 'bg-slate-50 text-slate-600 hover:bg-amber-50 border border-slate-200'}">
+                  🥇 1순위
+                </button>
+                <button onclick="handleVote('${acc.id}', 2)" class="py-2 text-xs font-semibold rounded-xl transition ${isRank2 ? 'bg-slate-400 text-white shadow-md' : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200'}">
+                  🥈 2순위
+                </button>
+                <button onclick="handleVote('${acc.id}', 3)" class="py-2 text-xs font-semibold rounded-xl transition ${isRank3 ? 'bg-amber-700 text-white shadow-md' : 'bg-slate-50 text-slate-600 hover:bg-amber-900/10 border border-slate-200'}">
+                  🥉 3순위
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      initIcons();
+    }
+
+    // Voting Handler
+    async function handleVote(accId, rank) {
+      if (!supabaseClient) {
+        alert("Supabase 접속 정보를 먼저 설정해주세요.");
+        return;
+      }
+
+      if (!currentUserName) {
+        alert("투표를 진행하려면 상단에 [내 이름 / 닉네임]을 입력해주세요.");
+        document.getElementById('user-name-input').focus();
+        return;
+      }
+
+      const existing = votes.find(v => v.category === currentCategory && v.user_name === currentUserName);
+
+      let r1 = existing?.rank_1 || null;
+      let r2 = existing?.rank_2 || null;
+      let r3 = existing?.rank_3 || null;
+
+      // Toggle or assign rank
+      if (rank === 1) { r1 = (r1 === accId) ? null : accId; if (r2 === accId) r2 = null; if (r3 === accId) r3 = null; }
+      if (rank === 2) { r2 = (r2 === accId) ? null : accId; if (r1 === accId) r1 = null; if (r3 === accId) r3 = null; }
+      if (rank === 3) { r3 = (r3 === accId) ? null : accId; if (r1 === accId) r1 = null; if (r2 === accId) r2 = null; }
+
+      try {
+        if (existing) {
+          const { error } = await supabaseClient
+            .from('votes')
+            .update({ rank_1: r1, rank_2: r2, rank_3: r3, updated_at: new Date().toISOString() })
+            .eq('id', existing.id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabaseClient
+            .from('votes')
+            .insert([{ category: currentCategory, user_name: currentUserName, rank_1: r1, rank_2: r2, rank_3: r3 }]);
+          if (error) throw error;
+        }
+        
+        fetchData();
+      } catch (err) {
+        console.error("투표 저장 오류:", err);
+        alert("투표 저장 중 오류가 발생했습니다.");
+      }
+    }
+
+    // Modal & CRUD Operations
+    function openAddModal() {
+      document.getElementById('acc-modal-title').innerText = "새 숙소 추가";
+      document.getElementById('acc-form').reset();
+      document.getElementById('form-acc-id').value = "";
+      document.getElementById('form-acc-category').value = currentCategory;
+      document.getElementById('acc-modal').classList.remove('hidden');
+    }
+
+    function openEditModal(accId) {
+      const acc = accommodations.find(a => a.id === accId);
+      if (!acc) return;
+
+      document.getElementById('acc-modal-title').innerText = "숙소 정보 수정";
+      document.getElementById('form-acc-id').value = acc.id;
+      document.getElementById('form-acc-category').value = acc.category;
+      document.getElementById('form-acc-name').value = acc.name || "";
+      document.getElementById('form-acc-location').value = acc.location || "";
+      document.getElementById('form-acc-price').value = acc.price || "";
+      document.getElementById('form-acc-bedrooms').value = acc.bedrooms || "";
+      document.getElementById('form-acc-beds').value = acc.beds || "";
+      document.getElementById('form-acc-bathrooms').value = acc.bathrooms || "";
+      document.getElementById('form-acc-features').value = acc.features || "";
+      document.getElementById('form-acc-url').value = acc.url || "";
+
+      document.getElementById('acc-modal').classList.remove('hidden');
+    }
+
+    function closeAccModal() {
+      document.getElementById('acc-modal').classList.add('hidden');
+    }
+
+    async function handleSaveAccommodation(e) {
+      e.preventDefault();
+      if (!supabaseClient) {
+        alert("Supabase 접속 설정을 완료해야 합니다.");
+        return;
+      }
+
+      const id = document.getElementById('form-acc-id').value;
+      const payload = {
+        category: document.getElementById('form-acc-category').value,
+        name: document.getElementById('form-acc-name').value.trim(),
+        location: document.getElementById('form-acc-location').value.trim(),
+        price: document.getElementById('form-acc-price').value.trim(),
+        bedrooms: document.getElementById('form-acc-bedrooms').value.trim(),
+        beds: document.getElementById('form-acc-beds').value.trim(),
+        bathrooms: document.getElementById('form-acc-bathrooms').value.trim(),
+        features: document.getElementById('form-acc-features').value.trim(),
+        url: document.getElementById('form-acc-url').value.trim(),
+      };
+
+      try {
+        if (id) {
+          const { error } = await supabaseClient.from('accommodations').update(payload).eq('id', id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabaseClient.from('accommodations').insert([payload]);
+          if (error) throw error;
+        }
+
+        closeAccModal();
+        fetchData();
+      } catch (err) {
+        console.error("숙소 저장 오류:", err);
+        alert("숙소 정보를 저장하는데 실패했습니다.");
+      }
+    }
+
+    async function deleteAccommodation(accId) {
+      if (!supabaseClient) return;
+      if (!confirm("정말 이 숙소를 삭제하시겠습니까?")) return;
+
+      try {
+        const { error } = await supabaseClient.from('accommodations').delete().eq('id', accId);
+        if (error) throw error;
+        fetchData();
+      } catch (err) {
+        console.error("숙소 삭제 오류:", err);
+        alert("삭제 중 오류가 발생했습니다.");
+      }
+    }
+  </script>
+</body>
+</html>
