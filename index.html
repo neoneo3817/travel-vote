@@ -11,11 +11,9 @@
 
   <!-- Header -->
   <header class="bg-indigo-600 text-white shadow-md">
-    <div class="max-w-4xl mx-mx-auto p-4 flex justify-between items-center px-4">
+    <div class="max-w-4xl mx-auto p-4 flex justify-between items-center">
       <h1 class="text-xl font-bold">🏔️ 돌로미티 숙소 결정 투표</h1>
-      <button onclick="toggleConfigModal()" class="text-xs bg-indigo-700 hover:bg-indigo-800 px-3 py-1.5 rounded border border-indigo-500">
-        ⚙️ DB 설정
-      </button>
+      <span class="text-xs bg-indigo-700 px-2.5 py-1 rounded-full border border-indigo-400">실시간 연동중 🟢</span>
     </div>
   </header>
 
@@ -50,7 +48,7 @@
         </div>
 
         <div id="accommodationsList" class="space-y-4">
-          <!-- 숙소 카드가 여기 로딩됩니다 -->
+          <!-- 숙소 카드가 표시되는 공간 -->
         </div>
 
         <!-- Submit Vote Button -->
@@ -69,35 +67,13 @@
             <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
           </h2>
           <div id="resultsBoard" class="space-y-3">
-            <!-- 투표 결과 집계가 표시됩니다 -->
+            <!-- 투표 결과 집계가 표시되는 공간 -->
           </div>
         </div>
       </div>
 
     </div>
   </main>
-
-  <!-- Modal: Supabase Settings -->
-  <div id="configModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
-      <h3 class="text-lg font-bold mb-3">⚙️ Supabase API 설정</h3>
-      <p class="text-xs text-slate-500 mb-4">최초 1회 연결을 위해 Data API URL과 Anon Key를 입력해주세요.</p>
-      <div class="space-y-3">
-        <div>
-          <label class="block text-xs font-semibold mb-1">Data API URL</label>
-          <input type="text" id="supabaseUrlInput" class="w-full p-2 border rounded text-xs font-mono" placeholder="https://xxx.supabase.co">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold mb-1">Anon Public Key</label>
-          <input type="text" id="supabaseKeyInput" class="w-full p-2 border rounded text-xs font-mono" placeholder="eyJhbGciOi...">
-        </div>
-      </div>
-      <div class="flex justify-end gap-2 mt-5">
-        <button onclick="toggleConfigModal()" class="px-3 py-1.5 text-xs text-slate-600">취소</button>
-        <button onclick="saveConfig()" class="px-4 py-1.5 text-xs bg-indigo-600 text-white rounded font-bold">저장 및 연결</button>
-      </div>
-    </div>
-  </div>
 
   <!-- Modal: Add Accommodation -->
   <div id="addModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
@@ -116,6 +92,7 @@
           <input type="text" id="newBathrooms" placeholder="화장실 수" class="w-full p-2 border rounded">
         </div>
         <input type="text" id="newUrl" placeholder="예약 링크 URL" class="w-full p-2 border rounded">
+        <input type="text" id="newImg" placeholder="이미지 파일명 또는 URL (예: 16.jpg)" class="w-full p-2 border rounded">
       </div>
       <div class="flex justify-end gap-2 mt-5">
         <button onclick="toggleAddModal()" class="px-3 py-1.5 text-xs text-slate-600">취소</button>
@@ -126,23 +103,27 @@
 
   <!-- App Script -->
   <script>
-    // 기본 프리셋 숙소 후보 목록 (1~15번)
+    // 🔑 본인의 Supabase 키 정보를 입력해 주세요!
+    const DEFAULT_SUPABASE_URL = "https://baijljhvosorhnrcownc.supabase.co/rest/v1/";
+    const DEFAULT_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhaWpsamh2b3NvcmhucmNvd25jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2OTY0MzksImV4cCI6MjEwODI3MjQzOX0.4uwxGwVmFzwaXsmd63xFNrBak21oITawwb8YEwl63lY";
+
+    // 깃허브에 올라간 1.jpg~15.jpg 파일 경로 매칭 완료
     const PRESET_ACCOMMODATIONS = [
-      { id: '1', category: '7nights', name: '1. Trafuns HOF 아파트', location: '볼차노', price: '190만', bedrooms: '2', beds: '2', bathrooms: '1', features: '발코니 뷰 끝내줌', url: 'https://www.trafunshof.com/en/online-booking' },
-      { id: '2', category: '7nights', name: '2. Innergost Hof 롯지', location: '볼차노', price: '170만', bedrooms: '2', beds: '2', bathrooms: '1', features: '발코니 뷰 끝내줌. 아직 예약 안열림', url: 'https://www.innergosthof.com/en/' },
-      { id: '3', category: '7nights', name: '3. Oberzerod 아파트', location: '볼차노', price: '220만', bedrooms: '2', beds: '2', bathrooms: '2', features: '발코니 뷰 끝내줌', url: 'https://www.oberzerod.com/en/living/panorama/' },
-      { id: '4', category: '7nights', name: '4. Seis am Schlern 콘도', location: '볼차노', price: '220만', bedrooms: '3', beds: '3', bathrooms: '1', features: '발코니 뷰 끝내줌', url: 'https://www.airbnb.co.kr/rooms/51579894?viralityEntryPoint=1&s=76&check_in=2027-09-11&check_out=2027-09-18&guests=3&adults=3&children=0&infants=0&unique_share_id=e69e9cd1-dc7c-40b3-ba0c-d09fe00cf8f7' },
-      { id: '5', category: '7nights', name: '5. Caprile-Alleghe 집', location: '볼차노', price: '250만', bedrooms: '2', beds: '3', bathrooms: '2', features: '발코니 산악뷰 끝내줌', url: 'https://www.airbnb.co.kr/rooms/1421801906851702421?viralityEntryPoint=1&s=76&check_in=2027-09-11&check_out=2027-09-18&guests=3&adults=3&children=0&infants=0&unique_share_id=1f6cea49-0855-4634-9baf-3744180f37d7' },
-      { id: '6', category: '7nights', name: '6. Pecol 살레', location: '볼차노', price: '310만', bedrooms: '3', beds: '3', bathrooms: '2', features: '발코니 산악뷰 좋음', url: 'https://www.airbnb.co.kr/rooms/45331024?viralityEntryPoint=1&s=76&check_in=2027-09-11&check_out=2027-09-18&guests=3&adults=3&children=0&infants=0&unique_share_id=b54bade2-fd26-4bb2-a0f1-427688e1e149' },
-      { id: '7', category: '7nights', name: '7. Sass Dlacia 캠핑장 롯지', location: '친퀘토리', price: '300만', bedrooms: '2', beds: '2+소파베드1', bathrooms: '1', features: '대형 캠핑장 각종 시설 사용 가능', url: 'https://campingsassdlacia.it/en' },
-      { id: '8', category: '7nights', name: '8. La Villa 아파트 (크레파츠)', location: '친퀘토리', price: '210만', bedrooms: '2', beds: '3', bathrooms: '1', features: '산악뷰 끝내주나 집 뒷편임', url: 'https://www.airbnb.co.kr/rooms/794028618594637814?viralityEntryPoint=1&s=76&check_in=2027-09-11&check_out=2027-09-18&guests=3&adults=3&children=0&infants=0&unique_share_id=6b6d33ad-3ca4-48bb-a6ff-117fdf70d0dd' },
-      { id: '9', category: '7nights', name: '9. San Ciascian 아파트 (알타 바디아)', location: '친퀘토리', price: '230만', bedrooms: '1', beds: '2', bathrooms: '1', features: '마당 잔디밭', url: 'https://www.airbnb.co.kr/rooms/1700733378054490736?viralityEntryPoint=1&s=76&check_in=2027-09-11&check_out=2027-09-18&guests=3&adults=3&children=0&infants=0&unique_share_id=b3cedb5c-7dea-41d4-a417-cd456b51debd' },
-      { id: '10', category: '7nights', name: '10. La Villa 아파트', location: '친퀘토리', price: '290만', bedrooms: '2', beds: '3', bathrooms: '1', features: '발코니 뷰 끝내줌', url: 'https://www.airbnb.co.kr/rooms/31139263?viralityEntryPoint=1&s=76&check_in=2027-09-11&check_out=2027-09-18&guests=3&adults=3&children=0&infants=0&unique_share_id=7a178115-3b7d-4c42-b13f-c09f9823aed1' },
-      { id: '11', category: '3nights', name: '11. Fie allo Scillar 아파트 (오팔)', location: '볼차노', price: '120만', bedrooms: '1', beds: '2+소파베드1', bathrooms: '1', features: '정원뷰 좋음+완전 신식', url: 'https://www.airbnb.co.kr/rooms/655454393790746501?viralityEntryPoint=1&s=76&check_in=2027-09-18&check_out=2027-09-21&guests=3&adults=3&children=0&infants=0&unique_share_id=5552dba1-3d38-42be-ae28-d3e8572b2648' },
-      { id: '12', category: '3nights', name: '12. Vols am Schlern 아파트', location: '볼차노', price: '150만', bedrooms: '2', beds: '3+소파베드1', bathrooms: '2', features: '부엌 산악뷰. 발코니 없음', url: 'https://www.airbnb.co.kr/rooms/39777287?viralityEntryPoint=1&s=76&check_in=2027-09-18&check_out=2027-09-21&guests=3&adults=3&children=0&infants=0&unique_share_id=066077d8-4f8c-4232-83e2-b5be2890d201' },
-      { id: '13', category: '3nights', name: '13. Vols am Schlern 별장', location: '볼차노', price: '110만', bedrooms: '2', beds: '2+소파베드1', bathrooms: '1', features: '별장 전체 마당의 각종 뷰. 시골집 스타일', url: 'https://www.airbnb.co.kr/rooms/707028084921852031?viralityEntryPoint=1&s=76&check_in=2027-09-18&check_out=2027-09-21&guests=3&adults=3&children=0&infants=0&unique_share_id=0c22097d-c86a-4e0d-8713-2a5806c6d1fc' },
-      { id: '14', category: '3nights', name: '14. Badia 아파트', location: '친퀘토리', price: '120만', bedrooms: '2', beds: '4', bathrooms: '2', features: '광폭 발코니 산악 사이드뷰', url: 'https://www.airbnb.co.kr/rooms/1170131398830189930?viralityEntryPoint=1&s=76&check_in=2027-09-18&check_out=2027-09-21&guests=3&adults=3&children=0&infants=0&unique_share_id=9a9cc0a6-42f5-4c35-b42d-a00a2c8e9e1d' },
-      { id: '15', category: '3nights', name: '15. San Ciascian 아파트', location: '친퀘토리', price: '160만', bedrooms: '2', beds: '3+소파베드1', bathrooms: '1', features: '산악 사이드뷰', url: 'https://www.airbnb.co.kr/rooms/914397442379820144?viralityEntryPoint=1&s=76&check_in=2027-09-18&check_out=2027-09-21&guests=3&adults=3&children=0&infants=0&unique_share_id=64479d0f-8891-4e2b-b3a1-980e8f7e3395' }
+      { id: '1', category: '7nights', name: '1. Trafuns HOF 아파트', location: '볼차노', price: '190만', bedrooms: '2', beds: '2', bathrooms: '1', features: '발코니 뷰 끝내줌', url: 'https://www.trafunshof.com/en/online-booking', img: './1.jpg' },
+      { id: '2', category: '7nights', name: '2. Innergost Hof 롯지', location: '볼차노', price: '170만', bedrooms: '2', beds: '2', bathrooms: '1', features: '발코니 뷰 끝내줌. 아직 예약 안열림', url: 'https://www.innergosthof.com/en/', img: './2.jpg' },
+      { id: '3', category: '7nights', name: '3. Oberzerod 아파트', location: '볼차노', price: '220만', bedrooms: '2', beds: '2', bathrooms: '2', features: '발코니 뷰 끝내줌', url: 'https://www.oberzerod.com/en/living/panorama/', img: './3.jpg' },
+      { id: '4', category: '7nights', name: '4. Seis am Schlern 콘도', location: '볼차노', price: '220만', bedrooms: '3', beds: '3', bathrooms: '1', features: '발코니 뷰 끝내줌', url: 'https://www.airbnb.co.kr/rooms/51579894?viralityEntryPoint=1&s=76&check_in=2027-09-11&check_out=2027-09-18&guests=3&adults=3&children=0&infants=0&unique_share_id=e69e9cd1-dc7c-40b3-ba0c-d09fe00cf8f7', img: './4.jpg' },
+      { id: '5', category: '7nights', name: '5. Caprile-Alleghe 집', location: '볼차노', price: '250만', bedrooms: '2', beds: '3', bathrooms: '2', features: '발코니 산악뷰 끝내줌', url: 'https://www.airbnb.co.kr/rooms/1421801906851702421?viralityEntryPoint=1&s=76&check_in=2027-09-11&check_out=2027-09-18&guests=3&adults=3&children=0&infants=0&unique_share_id=1f6cea49-0855-4634-9baf-3744180f37d7', img: './5.jpg' },
+      { id: '6', category: '7nights', name: '6. Pecol 살레', location: '볼차노', price: '310만', bedrooms: '3', beds: '3', bathrooms: '2', features: '발코니 산악뷰 좋음', url: 'https://www.airbnb.co.kr/rooms/45331024?viralityEntryPoint=1&s=76&check_in=2027-09-11&check_out=2027-09-18&guests=3&adults=3&children=0&infants=0&unique_share_id=b54bade2-fd26-4bb2-a0f1-427688e1e149', img: './6.jpg' },
+      { id: '7', category: '7nights', name: '7. Sass Dlacia 캠핑장 롯지', location: '친퀘토리', price: '300만', bedrooms: '2', beds: '2+소파베드1', bathrooms: '1', features: '대형 캠핑장 각종 시설 사용 가능', url: 'https://campingsassdlacia.it/en', img: './7.jpg' },
+      { id: '8', category: '7nights', name: '8. La Villa 아파트 (크레파츠)', location: '친퀘토리', price: '210만', bedrooms: '2', beds: '3', bathrooms: '1', features: '산악뷰 끝내주나 집 뒷편임', url: 'https://www.airbnb.co.kr/rooms/794028618594637814?viralityEntryPoint=1&s=76&check_in=2027-09-11&check_out=2027-09-18&guests=3&adults=3&children=0&infants=0&unique_share_id=6b6d33ad-3ca4-48bb-a6ff-117fdf70d0dd', img: './8.jpg' },
+      { id: '9', category: '7nights', name: '9. San Ciascian 아파트 (알타 바디아)', location: '친퀘토리', price: '230만', bedrooms: '1', beds: '2', bathrooms: '1', features: '마당 잔디밭', url: 'https://www.airbnb.co.kr/rooms/1700733378054490736?viralityEntryPoint=1&s=76&check_in=2027-09-11&check_out=2027-09-18&guests=3&adults=3&children=0&infants=0&unique_share_id=b3cedb5c-7dea-41d4-a417-cd456b51debd', img: './9.jpg' },
+      { id: '10', category: '7nights', name: '10. La Villa 아파트', location: '친퀘토리', price: '290만', bedrooms: '2', beds: '3', bathrooms: '1', features: '발코니 뷰 끝내줌', url: 'https://www.airbnb.co.kr/rooms/31139263?viralityEntryPoint=1&s=76&check_in=2027-09-11&check_out=2027-09-18&guests=3&adults=3&children=0&infants=0&unique_share_id=7a178115-3b7d-4c42-b13f-c09f9823aed1', img: './10.jpg' },
+      { id: '11', category: '3nights', name: '11. Fie allo Scillar 아파트 (오팔)', location: '볼차노', price: '120만', bedrooms: '1', beds: '2+소파베드1', bathrooms: '1', features: '정원뷰 좋음+완전 신식', url: 'https://www.airbnb.co.kr/rooms/655454393790746501?viralityEntryPoint=1&s=76&check_in=2027-09-18&check_out=2027-09-21&guests=3&adults=3&children=0&infants=0&unique_share_id=5552dba1-3d38-42be-ae28-d3e8572b2648', img: './11.jpg' },
+      { id: '12', category: '3nights', name: '12. Vols am Schlern 아파트', location: '볼차노', price: '150만', bedrooms: '2', beds: '3+소파베드1', bathrooms: '2', features: '부엌 산악뷰. 발코니 없음', url: 'https://www.airbnb.co.kr/rooms/39777287?viralityEntryPoint=1&s=76&check_in=2027-09-18&check_out=2027-09-21&guests=3&adults=3&children=0&infants=0&unique_share_id=066077d8-4f8c-4232-83e2-b5be2890d201', img: './12.jpg' },
+      { id: '13', category: '3nights', name: '13. Vols am Schlern 별장', location: '볼차노', price: '110만', bedrooms: '2', beds: '2+소파베드1', bathrooms: '1', features: '별장 전체 마당의 각종 뷰. 시골집 스타일', url: 'https://www.airbnb.co.kr/rooms/707028084921852031?viralityEntryPoint=1&s=76&check_in=2027-09-18&check_out=2027-09-21&guests=3&adults=3&children=0&infants=0&unique_share_id=0c22097d-c86a-4e0d-8713-2a5806c6d1fc', img: './13.jpg' },
+      { id: '14', category: '3nights', name: '14. Badia 아파트', location: '친퀘토리', price: '120만', bedrooms: '2', beds: '4', bathrooms: '2', features: '광폭 발코니 산악 사이드뷰', url: 'https://www.airbnb.co.kr/rooms/1170131398830189930?viralityEntryPoint=1&s=76&check_in=2027-09-18&check_out=2027-09-21&guests=3&adults=3&children=0&infants=0&unique_share_id=9a9cc0a6-42f5-4c35-b42d-a00a2c8e9e1d', img: './14.jpg' },
+      { id: '15', category: '3nights', name: '15. San Ciascian 아파트', location: '친퀘토리', price: '160만', bedrooms: '2', beds: '3+소파베드1', bathrooms: '1', features: '산악 사이드뷰', url: 'https://www.airbnb.co.kr/rooms/914397442379820144?viralityEntryPoint=1&s=76&check_in=2027-09-18&check_out=2027-09-21&guests=3&adults=3&children=0&infants=0&unique_share_id=64479d0f-8891-4e2b-b3a1-980e8f7e3395', img: './15.jpg' }
     ];
 
     let currentCategory = '7nights';
@@ -152,11 +133,8 @@
     let mySelection = { rank_1: null, rank_2: null, rank_3: null };
 
     window.onload = function() {
-      const DEFAULT_SUPABASE_URL = "https://baijljhvosorhnrcownc.supabase.co/rest/v1/";
-      const DEFAULT_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhaWpsamh2b3NvcmhucmNvd25jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2OTY0MzksImV4cCI6MjEwODI3MjQzOX0.4uwxGwVmFzwaXsmd63xFNrBak21oITawwb8YEwl63lY";
-      
-      if (savedUrl && savedKey) {
-        initSupabase(savedUrl, savedKey);
+      if (DEFAULT_SUPABASE_URL && !DEFAULT_SUPABASE_URL.includes("여기에")) {
+        initSupabase(DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_ANON_KEY);
       } else {
         accommodations = PRESET_ACCOMMODATIONS;
         renderAccommodations();
@@ -196,213 +174,4 @@
     }
 
     function subscribeRealtime() {
-      if (!supabaseClient) return;
-      supabaseClient
-        .channel('public:votes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'votes' }, payload => {
-          loadDataFromSupabase();
-        })
-        .subscribe();
-    }
-
-    function switchCategory(cat) {
-      currentCategory = cat;
-      mySelection = { rank_1: null, rank_2: null, rank_3: null };
-      
-      document.getElementById('tab7nights').className = cat === '7nights' 
-        ? "flex-1 py-3 px-4 font-bold text-center border-b-2 border-indigo-600 text-indigo-600"
-        : "flex-1 py-3 px-4 font-bold text-center border-b-2 border-transparent text-slate-500 hover:text-slate-700";
-      
-      document.getElementById('tab3nights').className = cat === '3nights' 
-        ? "flex-1 py-3 px-4 font-bold text-center border-b-2 border-indigo-600 text-indigo-600"
-        : "flex-1 py-3 px-4 font-bold text-center border-b-2 border-transparent text-slate-500 hover:text-slate-700";
-
-      renderAccommodations();
-      renderResults();
-    }
-
-    function renderAccommodations() {
-      const listEl = document.getElementById('accommodationsList');
-      const filtered = accommodations.filter(a => a.category === currentCategory);
-
-      listEl.innerHTML = filtered.map(item => `
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:border-indigo-300 transition">
-          <div class="flex justify-between items-start mb-2">
-            <div>
-              <span class="text-xs font-semibold px-2 py-0.5 bg-slate-100 text-slate-600 rounded mr-2">${item.location || '위치미정'}</span>
-              <h3 class="font-bold text-base text-slate-800 inline">${item.name}</h3>
-            </div>
-            <span class="text-indigo-600 font-bold text-sm">${item.price || '가격문의'}</span>
-          </div>
-          
-          <p class="text-xs text-slate-600 mb-3 bg-slate-50 p-2 rounded">✨ ${item.features || '특이사항 없음'}</p>
-          
-          <div class="flex items-center justify-between text-xs text-slate-500 mb-4">
-            <span>🛏️ 침실 ${item.bedrooms || '-'}개 | 침대 ${item.beds || '-'}개 | 🚿 화장실 ${item.bathrooms || '-'}개</span>
-            ${item.url ? `<a href="${item.url}" target="_blank" class="text-indigo-600 underline font-semibold">숙소 상세 보기 🔗</a>` : ''}
-          </div>
-
-          <div class="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100">
-            <button onclick="selectRank('${item.id}', 1)" id="btn-1-${item.id}" class="py-1.5 px-2 rounded-lg text-xs font-bold border border-slate-200 text-slate-600 hover:bg-slate-50">🥇 1순위</button>
-            <button onclick="selectRank('${item.id}', 2)" id="btn-2-${item.id}" class="py-1.5 px-2 rounded-lg text-xs font-bold border border-slate-200 text-slate-600 hover:bg-slate-50">🥈 2순위</button>
-            <button onclick="selectRank('${item.id}', 3)" id="btn-3-${item.id}" class="py-1.5 px-2 rounded-lg text-xs font-bold border border-slate-200 text-slate-600 hover:bg-slate-50">🥉 3순위</button>
-          </div>
-        </div>
-      `).join('');
-
-      updateRankButtons();
-    }
-
-    function selectRank(accId, rank) {
-      if (mySelection.rank_1 === accId) mySelection.rank_1 = null;
-      if (mySelection.rank_2 === accId) mySelection.rank_2 = null;
-      if (mySelection.rank_3 === accId) mySelection.rank_3 = null;
-
-      if (rank === 1) mySelection.rank_1 = accId;
-      if (rank === 2) mySelection.rank_2 = accId;
-      if (rank === 3) mySelection.rank_3 = accId;
-
-      updateRankButtons();
-    }
-
-    function updateRankButtons() {
-      const filtered = accommodations.filter(a => a.category === currentCategory);
-      filtered.forEach(item => {
-        const btn1 = document.getElementById(`btn-1-${item.id}`);
-        const btn2 = document.getElementById(`btn-2-${item.id}`);
-        const btn3 = document.getElementById(`btn-3-${item.id}`);
-
-        if (btn1) btn1.className = mySelection.rank_1 === item.id ? "py-1.5 px-2 rounded-lg text-xs font-bold bg-amber-500 text-white shadow-sm" : "py-1.5 px-2 rounded-lg text-xs font-bold border border-slate-200 text-slate-600 hover:bg-slate-50";
-        if (btn2) btn2.className = mySelection.rank_2 === item.id ? "py-1.5 px-2 rounded-lg text-xs font-bold bg-slate-400 text-white shadow-sm" : "py-1.5 px-2 rounded-lg text-xs font-bold border border-slate-200 text-slate-600 hover:bg-slate-50";
-        if (btn3) btn3.className = mySelection.rank_3 === item.id ? "py-1.5 px-2 rounded-lg text-xs font-bold bg-amber-700 text-white shadow-sm" : "py-1.5 px-2 rounded-lg text-xs font-bold border border-slate-200 text-slate-600 hover:bg-slate-50";
-      });
-    }
-
-    async function submitVote() {
-      const userName = document.getElementById('userNameInput').value.trim();
-      if (!userName) {
-        alert("이름(닉네임)을 입력해 주세요!");
-        return;
-      }
-
-      if (!mySelection.rank_1 && !mySelection.rank_2 && !mySelection.rank_3) {
-        alert("최소 1개 이상의 순위를 선택해 주세요!");
-        return;
-      }
-
-      if (supabaseClient) {
-        const { data: existing } = await supabaseClient
-          .from('votes')
-          .select('id')
-          .eq('category', currentCategory)
-          .eq('user_name', userName);
-
-        if (existing && existing.length > 0) {
-          await supabaseClient.from('votes').update({
-            rank_1: mySelection.rank_1,
-            rank_2: mySelection.rank_2,
-            rank_3: mySelection.rank_3,
-            updated_at: new Date()
-          }).eq('id', existing[0].id);
-        } else {
-          await supabaseClient.from('votes').insert([{
-            category: currentCategory,
-            user_name: userName,
-            rank_1: mySelection.rank_1,
-            rank_2: mySelection.rank_2,
-            rank_3: mySelection.rank_3
-          }]);
-        }
-        alert("🎉 성공적으로 투표가 완료되었습니다!");
-        loadDataFromSupabase();
-      } else {
-        alert("기억해주세요: DB 연결 설정이 되어있지 않아 로컬 상태로만 적용됩니다.");
-      }
-    }
-
-    function renderResults() {
-      const board = document.getElementById('resultsBoard');
-      const filteredAcc = accommodations.filter(a => a.category === currentCategory);
-      const categoryVotes = votes.filter(v => v.category === currentCategory);
-
-      let scores = {};
-      filteredAcc.forEach(a => scores[a.id] = 0);
-
-      categoryVotes.forEach(v => {
-        if (v.rank_1 && scores[v.rank_1] !== undefined) scores[v.rank_1] += 3;
-        if (v.rank_2 && scores[v.rank_2] !== undefined) scores[v.rank_2] += 2;
-        if (v.rank_3 && scores[v.rank_3] !== undefined) scores[v.rank_3] += 1;
-      });
-
-      const sorted = filteredAcc.map(a => ({ ...a, score: scores[a.id] || 0 }))
-                                .sort((a, b) => b.score - a.score);
-
-      const maxScore = Math.max(...sorted.map(s => s.score), 1);
-
-      board.innerHTML = `
-        <div class="text-xs text-slate-500 mb-2">총 투표 인원: <span class="font-bold text-indigo-600">${categoryVotes.length}명</span></div>
-        ${sorted.map((item, idx) => `
-          <div class="space-y-1">
-            <div class="flex justify-between text-xs font-semibold">
-              <span class="truncate max-w-[150px]">${idx === 0 && item.score > 0 ? '👑 ' : ''}${item.name}</span>
-              <span class="text-indigo-600 font-bold">${item.score}점</span>
-            </div>
-            <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-              <div class="bg-indigo-600 h-2 rounded-full transition-all duration-500" style="width: ${(item.score / maxScore) * 100}%"></div>
-            </div>
-          </div>
-        `).join('')}
-      `;
-    }
-
-    function toggleConfigModal() {
-      document.getElementById('configModal').classList.toggle('hidden');
-    }
-
-    function saveConfig() {
-      const url = document.getElementById('supabaseUrlInput').value.trim();
-      const key = document.getElementById('supabaseKeyInput').value.trim();
-      if (url && key) {
-        localStorage.setItem('supabase_url', url);
-        localStorage.setItem('supabase_key', key);
-        initSupabase(url, key);
-        toggleConfigModal();
-        alert("Supabase 연결 설정이 완료되었습니다!");
-      }
-    }
-
-    function toggleAddModal() {
-      document.getElementById('addModal').classList.toggle('hidden');
-    }
-
-    async function addAccommodation() {
-      const name = document.getElementById('newName').value.trim();
-      if (!name) return alert("숙소 이름을 입력해 주세요.");
-
-      const newAcc = {
-        category: currentCategory,
-        name: name,
-        location: document.getElementById('newLocation').value.trim(),
-        price: document.getElementById('newPrice').value.trim(),
-        bedrooms: document.getElementById('newBedrooms').value.trim(),
-        beds: document.getElementById('newBeds').value.trim(),
-        bathrooms: document.getElementById('newBathrooms').value.trim(),
-        features: document.getElementById('newFeatures').value.trim(),
-        url: document.getElementById('newUrl').value.trim()
-      };
-
-      if (supabaseClient) {
-        await supabaseClient.from('accommodations').insert([newAcc]);
-        loadDataFromSupabase();
-      } else {
-        accommodations.push({ ...newAcc, id: String(Date.now()) });
-        renderAccommodations();
-        renderResults();
-      }
-
-      toggleAddModal();
-      alert("새 숙소가 추가되었습니다!");
-    }
-  </script>
-</body>
-</html>
+      if (!
