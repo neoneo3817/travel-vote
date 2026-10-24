@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>돌로미티 숙소 결정 투표</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Supabase JS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-slate-100 min-h-screen text-slate-800 pb-20">
 
@@ -12,7 +14,7 @@
   <header class="bg-indigo-600 text-white p-4 shadow-md">
     <div class="max-w-4xl mx-auto flex justify-between items-center">
       <h1 class="text-lg font-bold">🏔️ 돌로미티 숙소 결정 투표</h1>
-      <span class="text-xs bg-indigo-700 px-2.5 py-1 rounded-full border border-indigo-400">정상 작동 중 🟢</span>
+      <span id="connectionBadge" class="text-xs bg-indigo-700 px-2.5 py-1 rounded-full border border-indigo-400">DB 연결 확인 중...</span>
     </div>
   </header>
 
@@ -39,7 +41,13 @@
       
       <!-- Accommodations List -->
       <div class="lg:col-span-2 space-y-4">
-        <h2 class="text-lg font-bold text-slate-800">🏡 숙소 후보 리스트</h2>
+        <div class="flex justify-between items-center">
+          <h2 class="text-lg font-bold text-slate-800">🏡 숙소 후보 리스트</h2>
+          <button onclick="toggleAddModal()" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-1.5 px-3 rounded-lg shadow-sm cursor-pointer">
+            + 새 숙소 추가
+          </button>
+        </div>
+        
         <div id="accommodationsList" class="space-y-4"></div>
 
         <button onclick="submitVote()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition cursor-pointer mt-4">
@@ -51,8 +59,8 @@
       <div class="lg:col-span-1">
         <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 sticky top-4">
           <h2 class="text-lg font-bold text-slate-800 mb-3 flex items-center gap-2">
-            📊 현황 판
-            <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+            📊 실시간 현황 판
+            <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
           </h2>
           <div id="resultsBoard" class="space-y-3"></div>
         </div>
@@ -61,9 +69,38 @@
     </div>
   </main>
 
+  <!-- Modal: Add Accommodation -->
+  <div id="addModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl space-y-3">
+      <h3 class="text-lg font-bold">➕ 새 숙소 추가</h3>
+      <input type="text" id="newName" placeholder="숙소 이름" class="w-full p-2 border rounded text-sm">
+      <input type="text" id="newLocation" placeholder="위치 (예: 볼차노)" class="w-full p-2 border rounded text-sm">
+      <div class="grid grid-cols-2 gap-2">
+        <input type="text" id="newPrice" placeholder="가격 (예: 200만)" class="w-full p-2 border rounded text-sm">
+        <input type="text" id="newFeatures" placeholder="특징 (예: 발코니 뷰)" class="w-full p-2 border rounded text-sm">
+      </div>
+      <div class="grid grid-cols-3 gap-2">
+        <input type="text" id="newBedrooms" placeholder="침실 수" class="w-full p-2 border rounded text-sm">
+        <input type="text" id="newBeds" placeholder="침대 수" class="w-full p-2 border rounded text-sm">
+        <input type="text" id="newBathrooms" placeholder="화장실 수" class="w-full p-2 border rounded text-sm">
+      </div>
+      <input type="text" id="newUrl" placeholder="예약 링크 URL" class="w-full p-2 border rounded text-sm">
+      <input type="text" id="newImg" placeholder="이미지 파일명 (예: ./16.jpg)" class="w-full p-2 border rounded text-sm">
+      
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="toggleAddModal()" class="px-3 py-1.5 text-xs text-slate-600 cursor-pointer">취소</button>
+        <button onclick="addAccommodation()" class="px-4 py-1.5 text-xs bg-emerald-600 text-white rounded font-bold cursor-pointer">등록하기</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // 원본 데이터 변수명 그대로 유지
-    const accommodations = [
+    // 🔑 Stay 프로젝트 Supabase 설정 정보
+    const SUPABASE_URL = "https://detyegzkjhgmaodnihvo.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRldHllZ3pramhnbWFvZG5paHZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4MjgzMjIsImV4cCI6MjEwODQwNDMyMn0.yLMftSsBFbcAfRCm61Wt4ni7s2oo19qF6QT-tJiBoQY";
+
+    // 안전장치 데이터 (네트워크 지연 시 화면 보호용)
+    const FALLBACK_DATA = [
       { id: '1', category: '7nights', name: '1. Trafuns HOF 아파트', location: '볼차노', price: '190만', bedrooms: '2', beds: '2', bathrooms: '1', features: '발코니 뷰 끝내줌', url: 'https://www.trafunshof.com/en/online-booking', img: './1.jpg' },
       { id: '2', category: '7nights', name: '2. Innergost Hof 롯지', location: '볼차노', price: '170만', bedrooms: '2', beds: '2', bathrooms: '1', features: '발코니 뷰 끝내줌. 아직 예약 안열림', url: 'https://www.innergosthof.com/en/', img: './2.jpg' },
       { id: '3', category: '7nights', name: '3. Oberzerod 아파트', location: '볼차노', price: '220만', bedrooms: '2', beds: '2', bathrooms: '2', features: '발코니 뷰 끝내줌', url: 'https://www.oberzerod.com/en/living/panorama/', img: './3.jpg' },
@@ -81,14 +118,67 @@
       { id: '15', category: '3nights', name: '15. San Ciascian 아파트', location: '친퀘토리', price: '160만', bedrooms: '2', beds: '3+소파베드1', bathrooms: '1', features: '산악 사이드뷰', url: 'https://www.airbnb.co.kr/rooms/914397442379820144', img: './15.jpg' }
     ];
 
+    let supabaseClient = null;
+    let accommodations = [...FALLBACK_DATA];
+    let votes = [];
     let currentCategory = '7nights';
     let mySelection = { rank_1: null, rank_2: null, rank_3: null };
-    let savedVotes = [];
 
     window.addEventListener('DOMContentLoaded', function() {
       renderAccommodations();
       renderResults();
+      initSupabase();
     });
+
+    function initSupabase() {
+      const badge = document.getElementById('connectionBadge');
+      try {
+        if (typeof supabase !== 'undefined' && SUPABASE_URL) {
+          supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+          if (badge) badge.innerText = "실시간 DB 연동중 🟢";
+          loadDataFromSupabase();
+          subscribeRealtime();
+        } else {
+          if (badge) badge.innerText = "로컬 모드 🟡";
+        }
+      } catch (e) {
+        console.warn("Supabase 초기화 예외:", e);
+        if (badge) badge.innerText = "기본 모드 🟡";
+      }
+    }
+
+    async function loadDataFromSupabase() {
+      if (!supabaseClient) return;
+      try {
+        let { data: accData, error: accErr } = await supabaseClient.from('accommodations').select('*');
+        if (!accErr && accData && accData.length > 0) {
+          accommodations = accData;
+        }
+
+        let { data: voteData, error: voteErr } = await supabaseClient.from('votes').select('*');
+        if (!voteErr && voteData) {
+          votes = voteData;
+        }
+
+        renderAccommodations();
+        renderResults();
+      } catch (err) {
+        console.warn("DB 로딩 실패 (기본 데이터 유지):", err);
+      }
+    }
+
+    function subscribeRealtime() {
+      if (!supabaseClient) return;
+      try {
+        supabaseClient
+          .channel('public:all_changes')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'votes' }, () => { loadDataFromSupabase(); })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'accommodations' }, () => { loadDataFromSupabase(); })
+          .subscribe();
+      } catch (e) {
+        console.warn("실시간 구독 실패:", e);
+      }
+    }
 
     function switchCategory(cat) {
       currentCategory = cat;
@@ -108,27 +198,29 @@
 
     function renderAccommodations() {
       const listEl = document.getElementById('accommodationsList');
+      if (!listEl) return;
+
       const filtered = accommodations.filter(item => item.category === currentCategory);
 
       listEl.innerHTML = filtered.map(item => `
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:border-indigo-300 transition">
           <div class="w-full aspect-[4/3] bg-slate-100 overflow-hidden">
-            <img src="${item.img}" alt="${item.name}" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80';">
+            <img src="${item.img || './1.jpg'}" alt="${item.name}" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80';">
           </div>
           <div class="p-4 space-y-2">
             <div class="flex justify-between items-start">
               <div>
-                <span class="text-xs font-semibold px-2 py-0.5 bg-slate-100 text-slate-600 rounded mr-2">${item.location}</span>
+                <span class="text-xs font-semibold px-2 py-0.5 bg-slate-100 text-slate-600 rounded mr-2">${item.location || '위치'}</span>
                 <h3 class="font-bold text-base text-slate-800 inline">${item.name}</h3>
               </div>
-              <span class="text-indigo-600 font-bold text-sm">${item.price}</span>
+              <span class="text-indigo-600 font-bold text-sm">${item.price || '가격문의'}</span>
             </div>
             
-            <p class="text-xs text-slate-600 bg-slate-50 p-2 rounded">✨ ${item.features}</p>
+            <p class="text-xs text-slate-600 bg-slate-50 p-2 rounded">✨ ${item.features || '특이사항 없음'}</p>
             
             <div class="flex items-center justify-between text-xs text-slate-500 pt-1">
-              <span>🛏️ 침실 ${item.bedrooms} | 침대 ${item.beds} | 🚿 화장실 ${item.bathrooms}</span>
-              <a href="${item.url}" target="_blank" class="text-indigo-600 underline font-semibold">숙소 상세 보기 🔗</a>
+              <span>🛏️ 침실 ${item.bedrooms || '-'} | 침대 ${item.beds || '-'} | 🚿 화장실 ${item.bathrooms || '-'}</span>
+              ${item.url ? `<a href="${item.url}" target="_blank" class="text-indigo-600 underline font-semibold">숙소 상세 보기 🔗</a>` : ''}
             </div>
 
             <div class="grid grid-cols-3 gap-2 pt-3 border-t border-slate-100">
@@ -168,7 +260,7 @@
       });
     }
 
-    function submitVote() {
+    async function submitVote() {
       const userName = document.getElementById('userNameInput').value.trim();
       if (!userName) {
         alert("이름(닉네임)을 입력해 주세요!");
@@ -180,29 +272,46 @@
         return;
       }
 
-      const existingIndex = savedVotes.findIndex(v => v.category === currentCategory && v.userName === userName);
-      const voteData = {
-        category: currentCategory,
-        userName: userName,
-        rank_1: mySelection.rank_1,
-        rank_2: mySelection.rank_2,
-        rank_3: mySelection.rank_3
-      };
+      if (supabaseClient) {
+        try {
+          const { data: existing } = await supabaseClient
+            .from('votes')
+            .select('id')
+            .eq('category', currentCategory)
+            .eq('user_name', userName);
 
-      if (existingIndex >= 0) {
-        savedVotes[existingIndex] = voteData;
+          if (existing && existing.length > 0) {
+            await supabaseClient.from('votes').update({
+              rank_1: mySelection.rank_1,
+              rank_2: mySelection.rank_2,
+              rank_3: mySelection.rank_3,
+              updated_at: new Date()
+            }).eq('id', existing[0].id);
+          } else {
+            await supabaseClient.from('votes').insert([{
+              category: currentCategory,
+              user_name: userName,
+              rank_1: mySelection.rank_1,
+              rank_2: mySelection.rank_2,
+              rank_3: mySelection.rank_3
+            }]);
+          }
+          alert("🎉 투표가 성공적으로 저장되었습니다!");
+          loadDataFromSupabase();
+        } catch (err) {
+          alert("투표 저장 중 오류 발생: " + err.message);
+        }
       } else {
-        savedVotes.push(voteData);
+        alert("DB 연동 상태가 아닙니다.");
       }
-
-      alert("🎉 투표가 제출되었습니다!");
-      renderResults();
     }
 
     function renderResults() {
       const board = document.getElementById('resultsBoard');
+      if (!board) return;
+
       const filteredAcc = accommodations.filter(a => a.category === currentCategory);
-      const categoryVotes = savedVotes.filter(v => v.category === currentCategory);
+      const categoryVotes = votes.filter(v => v.category === currentCategory);
 
       let scores = {};
       filteredAcc.forEach(a => scores[a.id] = 0);
@@ -214,4 +323,59 @@
       });
 
       const sorted = filteredAcc.map(a => ({ ...a, score: scores[a.id] || 0 }))
-                                .sort
+                                .sort((a, b) => b.score - a.score);
+
+      const maxScore = Math.max(...sorted.map(s => s.score), 1);
+
+      board.innerHTML = `
+        <div class="text-xs text-slate-500 mb-2">총 투표 참여: <span class="font-bold text-indigo-600">${categoryVotes.length}명</span></div>
+        ${sorted.map((item, idx) => `
+          <div class="space-y-1">
+            <div class="flex justify-between text-xs font-semibold">
+              <span class="truncate max-w-[150px]">${idx === 0 && item.score > 0 ? '👑 ' : ''}${item.name}</span>
+              <span class="text-indigo-600 font-bold">${item.score}점</span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+              <div class="bg-indigo-600 h-2 rounded-full transition-all duration-300" style="width: ${(item.score / maxScore) * 100}%"></div>
+            </div>
+          </div>
+        `).join('')}
+      `;
+    }
+
+    function toggleAddModal() {
+      document.getElementById('addModal').classList.toggle('hidden');
+    }
+
+    async function addAccommodation() {
+      const name = document.getElementById('newName').value.trim();
+      if (!name) return alert("숙소 이름을 입력해 주세요.");
+
+      const newAcc = {
+        category: currentCategory,
+        name: name,
+        location: document.getElementById('newLocation').value.trim(),
+        price: document.getElementById('newPrice').value.trim(),
+        bedrooms: document.getElementById('newBedrooms').value.trim(),
+        beds: document.getElementById('newBeds').value.trim(),
+        bathrooms: document.getElementById('newBathrooms').value.trim(),
+        features: document.getElementById('newFeatures').value.trim(),
+        url: document.getElementById('newUrl').value.trim(),
+        img: document.getElementById('newImg').value.trim() || './16.jpg'
+      };
+
+      if (supabaseClient) {
+        const { error } = await supabaseClient.from('accommodations').insert([newAcc]);
+        if (error) {
+          alert("숙소 추가 실패: " + error.message);
+          return;
+        }
+        loadDataFromSupabase();
+      }
+
+      toggleAddModal();
+      alert("새 숙소가 추가되었습니다!");
+    }
+  </script>
+</body>
+</html>
