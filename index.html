@@ -14,7 +14,13 @@
   <header class="bg-indigo-600 text-white p-4 shadow-md">
     <div class="max-w-4xl mx-auto flex justify-between items-center">
       <h1 class="text-lg font-bold">🏔️ 돌로미티 숙소 결정 투표</h1>
-      <span id="connectionBadge" class="text-xs bg-indigo-700 px-2.5 py-1 rounded-full border border-indigo-400">DB 연결 확인 중...</span>
+      <div class="flex items-center gap-2">
+        <span id="connectionBadge" class="text-xs bg-indigo-700 px-2.5 py-1 rounded-full border border-indigo-400">DB 연결 확인 중...</span>
+        <!-- 테스트용 투표 리셋 버튼 추가 -->
+        <button onclick="resetAllVotes()" class="text-xs bg-rose-500 hover:bg-rose-600 text-white px-2.5 py-1 rounded-full font-bold shadow-sm transition cursor-pointer" title="모든 투표를 초기화합니다">
+          🔄 투표 리셋
+        </button>
+      </div>
     </div>
   </header>
 
@@ -99,7 +105,6 @@
     const SUPABASE_URL = "https://detyegzkjhgmaodnihvo.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRldHllZ3pramhnbWFvZG5paHZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4MjgzMjIsImV4cCI6MjEwODQwNDMyMn0.yLMftSsBFbcAfRCm61Wt4ni7s2oo19qF6QT-tJiBoQY";
 
-    // 안전장치 데이터 (네트워크 지연 시 화면 보호용)
     const FALLBACK_DATA = [
       { id: '1', category: '7nights', name: '1. Trafuns HOF 아파트', location: '볼차노', price: '190만', bedrooms: '2', beds: '2', bathrooms: '1', features: '발코니 뷰 끝내줌', url: 'https://www.trafunshof.com/en/online-booking', img: './1.jpg' },
       { id: '2', category: '7nights', name: '2. Innergost Hof 롯지', location: '볼차노', price: '170만', bedrooms: '2', beds: '2', bathrooms: '1', features: '발코니 뷰 끝내줌. 아직 예약 안열림', url: 'https://www.innergosthof.com/en/', img: './2.jpg' },
@@ -303,6 +308,28 @@
         }
       } else {
         alert("DB 연동 상태가 아닙니다.");
+      }
+    }
+
+    async function resetAllVotes() {
+      if (!confirm("정말로 모든 투표 기록을 초기화하시겠습니까?")) return;
+
+      if (supabaseClient) {
+        try {
+          // votes 테이블의 모든 데이터 삭제
+          const { error } = await supabaseClient.from('votes').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+          if (error) {
+            alert("초기화 실패: " + error.message);
+            return;
+          }
+          votes = [];
+          mySelection = { rank_1: null, rank_2: null, rank_3: null };
+          renderAccommodations();
+          renderResults();
+          alert("🔄 모든 투표가 초기화되었습니다!");
+        } catch (err) {
+          alert("초기화 중 오류 발생: " + err.message);
+        }
       }
     }
 
