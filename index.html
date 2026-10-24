@@ -16,7 +16,6 @@
       <h1 class="text-lg font-bold">🏔️ 돌로미티 숙소 결정 투표</h1>
       <div class="flex items-center gap-2">
         <span id="connectionBadge" class="text-xs bg-indigo-700 px-2.5 py-1 rounded-full border border-indigo-400">DB 연결 확인 중...</span>
-        <!-- 테스트용 투표 리셋 버튼 추가 -->
         <button onclick="resetAllVotes()" class="text-xs bg-rose-500 hover:bg-rose-600 text-white px-2.5 py-1 rounded-full font-bold shadow-sm transition cursor-pointer" title="모든 투표를 초기화합니다">
           🔄 투표 리셋
         </button>
@@ -30,6 +29,7 @@
     <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
       <label class="block text-sm font-semibold text-slate-700 mb-2">👤 당신의 이름 (투표자 닉네임):</label>
       <input type="text" id="userNameInput" placeholder="예: 홍길동" class="w-full md:w-64 p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
+      <p class="text-xs text-slate-500 mt-2">💡 각 숙소마다 생각하시는 점수(1점, 2점, 3점)를 선택해 주세요!</p>
     </div>
 
     <!-- Category Tabs -->
@@ -57,7 +57,7 @@
         <div id="accommodationsList" class="space-y-4"></div>
 
         <button onclick="submitVote()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition cursor-pointer mt-4">
-          🗳️ 선택한 순위로 투표 제출하기
+          🗳️ 평점 제출하기
         </button>
       </div>
 
@@ -65,7 +65,7 @@
       <div class="lg:col-span-1">
         <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 sticky top-4">
           <h2 class="text-lg font-bold text-slate-800 mb-3 flex items-center gap-2">
-            📊 실시간 현황 판
+            📊 실시간 총점 현황
             <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
           </h2>
           <div id="resultsBoard" class="space-y-3"></div>
@@ -127,7 +127,9 @@
     let accommodations = [...FALLBACK_DATA];
     let votes = [];
     let currentCategory = '7nights';
-    let mySelection = { rank_1: null, rank_2: null, rank_3: null };
+    
+    // 개별 숙소 점수 저장 객체 { accId: score }
+    let myScores = {};
 
     window.addEventListener('DOMContentLoaded', function() {
       renderAccommodations();
@@ -187,7 +189,7 @@
 
     function switchCategory(cat) {
       currentCategory = cat;
-      mySelection = { rank_1: null, rank_2: null, rank_3: null };
+      myScores = {}; // 카테고리 변경 시 내가 매긴 점수 초기화
 
       document.getElementById('tab7nights').className = cat === '7nights' 
         ? "flex-1 py-3 font-bold text-center border-b-2 border-indigo-600 text-indigo-600 cursor-pointer"
@@ -229,39 +231,39 @@
             </div>
 
             <div class="grid grid-cols-3 gap-2 pt-3 border-t border-slate-100">
-              <button onclick="selectRank('${item.id}', 1)" id="btn-1-${item.id}" class="py-1.5 px-2 rounded-lg text-xs font-bold border border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer">🥇 1순위</button>
-              <button onclick="selectRank('${item.id}', 2)" id="btn-2-${item.id}" class="py-1.5 px-2 rounded-lg text-xs font-bold border border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer">🥈 2순위</button>
-              <button onclick="selectRank('${item.id}', 3)" id="btn-3-${item.id}" class="py-1.5 px-2 rounded-lg text-xs font-bold border border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer">🥉 3순위</button>
+              <button onclick="setScore('${item.id}', 1)" id="btn-1-${item.id}" class="py-1.5 px-2 rounded-lg text-xs font-bold border border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer">⭐ 1점</button>
+              <button onclick="setScore('${item.id}', 2)" id="btn-2-${item.id}" class="py-1.5 px-2 rounded-lg text-xs font-bold border border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer">⭐⭐ 2점</button>
+              <button onclick="setScore('${item.id}', 3)" id="btn-3-${item.id}" class="py-1.5 px-2 rounded-lg text-xs font-bold border border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer">⭐⭐⭐ 3점</button>
             </div>
           </div>
         </div>
       `).join('');
 
-      updateRankButtons();
+      updateScoreButtons();
     }
 
-    function selectRank(accId, rank) {
-      if (mySelection.rank_1 === accId) mySelection.rank_1 = null;
-      if (mySelection.rank_2 === accId) mySelection.rank_2 = null;
-      if (mySelection.rank_3 === accId) mySelection.rank_3 = null;
-
-      if (rank === 1) mySelection.rank_1 = accId;
-      if (rank === 2) mySelection.rank_2 = accId;
-      if (rank === 3) mySelection.rank_3 = accId;
-
-      updateRankButtons();
+    // 개별 숙소에 점수 토글 기능 (같은 점수를 다시 누르면 취소)
+    function setScore(accId, score) {
+      if (myScores[accId] === score) {
+        delete myScores[accId];
+      } else {
+        myScores[accId] = score;
+      }
+      updateScoreButtons();
     }
 
-    function updateRankButtons() {
+    function updateScoreButtons() {
       const filtered = accommodations.filter(item => item.category === currentCategory);
       filtered.forEach(item => {
         const btn1 = document.getElementById(`btn-1-${item.id}`);
         const btn2 = document.getElementById(`btn-2-${item.id}`);
         const btn3 = document.getElementById(`btn-3-${item.id}`);
 
-        if (btn1) btn1.className = mySelection.rank_1 === item.id ? "py-1.5 px-2 rounded-lg text-xs font-bold bg-amber-500 text-white shadow-sm cursor-pointer" : "py-1.5 px-2 rounded-lg text-xs font-bold border border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer";
-        if (btn2) btn2.className = mySelection.rank_2 === item.id ? "py-1.5 px-2 rounded-lg text-xs font-bold bg-slate-400 text-white shadow-sm cursor-pointer" : "py-1.5 px-2 rounded-lg text-xs font-bold border border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer";
-        if (btn3) btn3.className = mySelection.rank_3 === item.id ? "py-1.5 px-2 rounded-lg text-xs font-bold bg-amber-700 text-white shadow-sm cursor-pointer" : "py-1.5 px-2 rounded-lg text-xs font-bold border border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer";
+        const score = myScores[item.id];
+
+        if (btn1) btn1.className = score === 1 ? "py-1.5 px-2 rounded-lg text-xs font-bold bg-amber-500 text-white shadow-sm cursor-pointer" : "py-1.5 px-2 rounded-lg text-xs font-bold border border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer";
+        if (btn2) btn2.className = score === 2 ? "py-1.5 px-2 rounded-lg text-xs font-bold bg-indigo-500 text-white shadow-sm cursor-pointer" : "py-1.5 px-2 rounded-lg text-xs font-bold border border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer";
+        if (btn3) btn3.className = score === 3 ? "py-1.5 px-2 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow-sm cursor-pointer" : "py-1.5 px-2 rounded-lg text-xs font-bold border border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer";
       });
     }
 
@@ -272,39 +274,39 @@
         return;
       }
 
-      if (!mySelection.rank_1 && !mySelection.rank_2 && !mySelection.rank_3) {
-        alert("최소 1개 이상의 순위를 선택해 주세요!");
+      if (Object.keys(myScores).length === 0) {
+        alert("최소 1개 이상의 숙소에 점수를 주셔야 합니다!");
         return;
       }
 
       if (supabaseClient) {
         try {
-          const { data: existing } = await supabaseClient
+          // 기존 투표 내역이 있으면 먼저 삭제 후 새 데이터 저장
+          await supabaseClient
             .from('votes')
-            .select('id')
+            .delete()
             .eq('category', currentCategory)
             .eq('user_name', userName);
 
-          if (existing && existing.length > 0) {
-            await supabaseClient.from('votes').update({
-              rank_1: mySelection.rank_1,
-              rank_2: mySelection.rank_2,
-              rank_3: mySelection.rank_3,
-              updated_at: new Date()
-            }).eq('id', existing[0].id);
-          } else {
-            await supabaseClient.from('votes').insert([{
-              category: currentCategory,
-              user_name: userName,
-              rank_1: mySelection.rank_1,
-              rank_2: mySelection.rank_2,
-              rank_3: mySelection.rank_3
-            }]);
+          // 점수가 매겨진 각 숙소 항목들을 DB에 개별 기록
+          const newVotes = Object.entries(myScores).map(([accId, score]) => ({
+            category: currentCategory,
+            user_name: userName,
+            rank_1: accId,      // 숙소 ID
+            rank_2: String(score) // 부여된 점수 (1, 2, 3)
+          }));
+
+          const { error } = await supabaseClient.from('votes').insert(newVotes);
+
+          if (error) {
+            alert("저장 실패: " + error.message);
+            return;
           }
-          alert("🎉 투표가 성공적으로 저장되었습니다!");
+
+          alert("🎉 평점이 성공적으로 제출되었습니다!");
           loadDataFromSupabase();
         } catch (err) {
-          alert("투표 저장 중 오류 발생: " + err.message);
+          alert("제출 중 오류 발생: " + err.message);
         }
       } else {
         alert("DB 연동 상태가 아닙니다.");
@@ -312,21 +314,20 @@
     }
 
     async function resetAllVotes() {
-      if (!confirm("정말로 모든 투표 기록을 초기화하시겠습니까?")) return;
+      if (!confirm("정말로 모든 투표 및 평점 기록을 초기화하시겠습니까?")) return;
 
       if (supabaseClient) {
         try {
-          // votes 테이블의 모든 데이터 삭제
           const { error } = await supabaseClient.from('votes').delete().neq('id', '00000000-0000-0000-0000-000000000000');
           if (error) {
             alert("초기화 실패: " + error.message);
             return;
           }
           votes = [];
-          mySelection = { rank_1: null, rank_2: null, rank_3: null };
+          myScores = {};
           renderAccommodations();
           renderResults();
-          alert("🔄 모든 투표가 초기화되었습니다!");
+          alert("🔄 모든 투표 데이터가 초기화되었습니다!");
         } catch (err) {
           alert("초기화 중 오류 발생: " + err.message);
         }
@@ -340,13 +341,20 @@
       const filteredAcc = accommodations.filter(a => a.category === currentCategory);
       const categoryVotes = votes.filter(v => v.category === currentCategory);
 
+      // 점수 집계 객체 초기화
       let scores = {};
       filteredAcc.forEach(a => scores[a.id] = 0);
 
+      // 참여자 수 계산 (중복 닉네임 제외)
+      const uniqueUsers = new Set(categoryVotes.map(v => v.user_name)).size;
+
+      // 점수 합산 로직 (rank_1: 숙소ID, rank_2: 점수)
       categoryVotes.forEach(v => {
-        if (v.rank_1 && scores[v.rank_1] !== undefined) scores[v.rank_1] += 3;
-        if (v.rank_2 && scores[v.rank_2] !== undefined) scores[v.rank_2] += 2;
-        if (v.rank_3 && scores[v.rank_3] !== undefined) scores[v.rank_3] += 1;
+        const accId = v.rank_1;
+        const score = parseInt(v.rank_2) || 0;
+        if (scores[accId] !== undefined) {
+          scores[accId] += score;
+        }
       });
 
       const sorted = filteredAcc.map(a => ({ ...a, score: scores[a.id] || 0 }))
@@ -355,7 +363,7 @@
       const maxScore = Math.max(...sorted.map(s => s.score), 1);
 
       board.innerHTML = `
-        <div class="text-xs text-slate-500 mb-2">총 투표 참여: <span class="font-bold text-indigo-600">${categoryVotes.length}명</span></div>
+        <div class="text-xs text-slate-500 mb-2">총 평가 참여: <span class="font-bold text-indigo-600">${uniqueUsers}명</span></div>
         ${sorted.map((item, idx) => `
           <div class="space-y-1">
             <div class="flex justify-between text-xs font-semibold">
