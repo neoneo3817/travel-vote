@@ -84,7 +84,6 @@
     let mySelection = { rank_1: null, rank_2: null, rank_3: null };
     let savedVotes = [];
 
-    // 실행 초기화
     window.addEventListener('DOMContentLoaded', function() {
       renderAccommodations();
       renderResults();
@@ -112,24 +111,23 @@
 
       listEl.innerHTML = filtered.map(item => `
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:border-indigo-300 transition">
-          <!-- 4:3 비율의 깔끔한 이미지 프레임 -->
           <div class="w-full aspect-[4/3] bg-slate-100 overflow-hidden">
             <img src="${item.img}" alt="${item.name}" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80';">
           </div>
           <div class="p-4 space-y-2">
             <div class="flex justify-between items-start">
               <div>
-                <span class="text-xs font-semibold px-2 py-0.5 bg-slate-100 text-slate-600 rounded mr-2">${item.location}</span>
-                <h3 class="font-bold text-base text-slate-800 inline">${item.name}</h3>
+                <span class="text-xs font-semibold px-2 py-0.5 bg-slate-100 text-slate-600 rounded mr-2">\${item.location}</span>
+                <h3 class="font-bold text-base text-slate-800 inline">\${item.name}</h3>
               </div>
-              <span class="text-indigo-600 font-bold text-sm">${item.price}</span>
+              <span class="text-indigo-600 font-bold text-sm">\${item.price}</span>
             </div>
             
-            <p class="text-xs text-slate-600 bg-slate-50 p-2 rounded">✨ ${item.features}</p>
+            <p class="text-xs text-slate-600 bg-slate-50 p-2 rounded">✨ \${item.features}</p>
             
             <div class="flex items-center justify-between text-xs text-slate-500 pt-1">
-              <span>🛏️ 침실 ${item.bedrooms} | 침대 ${item.beds} | 🚿 화장실 ${item.bathrooms}</span>
-              <a href="${item.url}" target="_blank" class="text-indigo-600 underline font-semibold">숙소 상세 보기 🔗</a>
+              <span>🛏️ 침실 \${item.bedrooms} | 침대 ${item.beds} \vert{} 🚿 화장실 ${item.bathrooms}</span>
+              <a href="\${item.url}" target="_blank" class="text-indigo-600 underline font-semibold">숙소 상세 보기 🔗</a>
             </div>
 
             <div class="grid grid-cols-3 gap-2 pt-3 border-t border-slate-100">
@@ -159,9 +157,8 @@
     function updateRankButtons() {
       const filtered = PRESET_DATA.filter(item => item.category === currentCategory);
       filtered.forEach(item => {
-        const btn1 = document.getElementById(`btn-1-${item.id}`);
-        const btn2 = document.getElementById(`btn-2-${item.id}`);
-        const btn3 = document.getElementById(`btn-3-${item.id}`);
+        const btn1 = document.getElementById(`btn-1-\${item.id}`);
+        const btn2 = document.getElementById(`btn-2-${item.id}`); const btn3 = document.getElementById(`btn-3-${item.id}`);
 
         if (btn1) btn1.className = mySelection.rank_1 === item.id ? "py-1.5 px-2 rounded-lg text-xs font-bold bg-amber-500 text-white shadow-sm cursor-pointer" : "py-1.5 px-2 rounded-lg text-xs font-bold border border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer";
         if (btn2) btn2.className = mySelection.rank_2 === item.id ? "py-1.5 px-2 rounded-lg text-xs font-bold bg-slate-400 text-white shadow-sm cursor-pointer" : "py-1.5 px-2 rounded-lg text-xs font-bold border border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer";
@@ -220,20 +217,5 @@
       const maxScore = Math.max(...sorted.map(s => s.score), 1);
 
       board.innerHTML = `
-        <div class="text-xs text-slate-500 mb-2">총 투표 참여: <span class="font-bold text-indigo-600">${categoryVotes.length}명</span></div>
-        ${sorted.map((item, idx) => `
-          <div class="space-y-1">
-            <div class="flex justify-between text-xs font-semibold">
-              <span class="truncate max-w-[150px]">${idx === 0 && item.score > 0 ? '👑 ' : ''}${item.name}</span>
-              <span class="text-indigo-600 font-bold">${item.score}점</span>
-            </div>
-            <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-              <div class="bg-indigo-600 h-2 rounded-full transition-all duration-300" style="width: ${(item.score / maxScore) * 100}%"></div>
-            </div>
-          </div>
-        `).join('')}
-      `;
-    }
-  </script>
-</body>
-</html>
+        <div class="text-xs text-slate-500 mb-2">총 투표 참여: <span class="font-bold text-indigo-600">\${categoryVotes.length}명</span></div>
+        \${sorted.
