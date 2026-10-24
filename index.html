@@ -152,8 +152,8 @@
     let mySelection = { rank_1: null, rank_2: null, rank_3: null };
 
     window.onload = function() {
-      const savedUrl = localStorage.getItem('supabase_url');
-      const savedKey = localStorage.getItem('supabase_key');
+      const DEFAULT_SUPABASE_URL = "https://baijljhvosorhnrcownc.supabase.co/rest/v1/";
+      const DEFAULT_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhaWpsamh2b3NvcmhucmNvd25jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2OTY0MzksImV4cCI6MjEwODI3MjQzOX0.4uwxGwVmFzwaXsmd63xFNrBak21oITawwb8YEwl63lY";
       
       if (savedUrl && savedKey) {
         initSupabase(savedUrl, savedKey);
