@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>돌로미티 숙소 결정 투표 · 최종 결과</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 pb-20">
+  <header class="bg-indigo-600 text-white p-4 shadow-md">
+    <div class="max-w-5xl mx-auto flex flex-wrap justify-between items-center gap-2">
+      <h1 class="text-lg font-bold">🏔️ 돌로미티 숙소 결정 투표</h1>
+      <span class="text-xs bg-indigo-700 px-2.5 py-1 rounded-full border border-indigo-400">🔒 투표 종료 · 최종 결과</span>
+    </div>
+  </header>
+  <main class="max-w-5xl mx-auto p-4 space-y-6">
+    <div class="bg-amber-50 border border-amber-200 text-amber-800 text-sm font-semibold p-3 rounded-xl">투표가 종료되었습니다. 아래는 최종 집계 결과입니다.</div>
+    <div class="flex border-b border-slate-200 bg-white rounded-t-xl overflow-hidden shadow-sm">
+      <button id="tabComo" onclick="switchCategory('como')" class="flex-1 py-3 font-bold text-center border-b-2 border-indigo-600 text-indigo-600 cursor-pointer text-xs md:text-sm">[3차 투표] 꼬모 숙소</button>
+      <button id="tabFinal" onclick="switchCategory('final')" class="flex-1 py-3 font-bold text-center border-b-2 border-transparent text-slate-500 hover:text-slate-700 cursor-pointer text-xs md:text-sm">🏆 [결선 투표] 최종 조합</button>
+      <button id="tab7nights" onclick="switchCategory('7nights')" class="flex-1 py-3 font-bold text-center border-b-2 border-transparent text-slate-500 hover:text-slate-700 cursor-pointer text-xs md:text-sm">🗓️ 7박 코스 후보</button>
+      <button id="tab3nights" onclick="switchCategory('3nights')" class="flex-1 py-3 font-bold text-center border-b-2 border-transparent text-slate-500 hover:text-slate-700 cursor-pointer text-xs md:text-sm">🗓️ 3박 코스 후보</button>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="lg:col-span-2 space-y-4">
+        <h2 id="listTitle" class="text-lg font-bold text-slate-800"></h2>
+        <div id="accommodationsList" class="space-y-4"></div>
+      </div>
+      <div class="lg:col-span-1">
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 sticky top-4">
+          <h2 id="boardTitle" class="text-lg font-bold text-slate-800 mb-3">📊 최종 결과</h2>
+          <div id="resultsBoard" class="space-y-3 overflow-x-auto"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script>
+    // 2차 결선 조합 (신규 탭)
+    const FINAL_COMBOS = [
+      { 
+        id: 'combo_1', 
+        category: 'final', 
+        name: '조합 1: 친퀘토리 + 볼차노', 
+        location: '친퀘토리 + 볼차노', 
+        acc1_name: '5. Caprile-Alleghe 집 (7박)',
+        acc1_url: 'https://www.airbnb.co.kr/rooms/1421801906851702421',
+        acc2_name: '3. Oberzerod 아파트 (3박)',
+        acc2_url: 'https://www.oberzerod.com/en/living/panorama/',
+        notes: '⚠️ 볼차노 숙소는 3일이 가능한지 메일 확인 중입니다!'
+      },
+      { 
+        id: 'combo_2', 
+        category: 'final', 
+        name: '조합 2: 친퀘토리 + 친퀘토리', 
+        location: '친퀘토리 + 친퀘토리', 
+        acc1_name: '10. La Villa 아파트 (7박)',
+        acc1_url: 'https://www.airbnb.co.kr/rooms/31139263',
+        acc2_name: '5. Caprile-Alleghe 집 (3박)',
+        acc2_url: 'https://www.airbnb.co.kr/rooms/1421801906851702421',
+        notes: '✨ 지금 당장 예약이 가능합니다! (동일 지역: 친퀘토리 코스)'
+      },
+      { 
+        id: 'combo_3', 
+        category: 'final', 
+        name: '조합 3: 친퀘토리 + 볼차노', 
+        location: '친퀘토리 + 볼차노', 
+        acc1_name: '5. Caprile-Alleghe 집 (7박)',
+        acc1_url: 'https://www.airbnb.co.kr/rooms/1421801906851702421',
+        acc2_name: '13. Vols am Schlern 별장 (3박)',
+        acc2_url: 'https://www.airbnb.co.kr/rooms/707028084921852031',
+        notes: '✨ 지금 당장 예약이 가능합니다!'
+      }
+    ];
+
+    // 숙소 데이터 (DB accommodations 테이블 최종본, id는 투표 데이터와 동일한 UUID)
+    const ACC_DATA = [
+      {"id": "cfab19bb-d0a3-481c-9b35-7812afe89332", "category": "7nights", "name": "1. Trafuns HOF 아파트", "location": "볼차노", "price": "190만", "bedrooms": "2", "beds": "2", "bathrooms": "1", "features": "발코니 뷰 끝내줌", "url": "https://www.trafunshof.com/en/online-booking", "img": "https://raw.githubusercontent.com/neoneo3817/travel-vote/main/1.jpg"},
+      {"id": "fc30e0d5-c589-48dc-83c7-f6b41908b3a1", "category": "7nights", "name": "2. Innergost Hof 롯지", "location": "볼차노", "price": "170만", "bedrooms": "2", "beds": "2", "bathrooms": "1", "features": "발코니 뷰 끝내줌. 아직 예약 안열림", "url": "https://www.innergosthof.com/en/", "img": "https://raw.githubusercontent.com/neoneo3817/travel-vote/main/2.jpg"},
+      {"id": "6091e6f2-4a6f-451f-8390-eb52da1b7cbf", "category": "7nights", "name": "3. Oberzerod 아파트", "location": "볼차노", "price": "220만", "bedrooms": "2", "beds": "2", "bathrooms": "2", "features": "발코니 뷰 끝내줌", "url": "https://www.oberzerod.com/en/living/panorama/", "img": "https://raw.githubusercontent.com/neoneo3817/travel-vote/main/3.jpg"},
+      {"id": "5a8b0ef2-c608-4963-9bed-1faf5b5405d9", "category": "7nights", "name": "4. Seis am Schlern 콘도", "location": "볼차노", "price": "220만", "bedrooms": "3", "beds": "3", "bathrooms": "1", "features": "발코니 뷰 끝내줌", "url": "https://www.airbnb.co.kr/rooms/51579894", "img": "https://raw.githubusercontent.com/neoneo3817/travel-vote/main/4.jpg"},
+      {"id": "5a9e1db3-b60b-402f-8c32-107e4cf9714e", "category": "7nights", "name": "5. Caprile-Alleghe 집", "location": "볼차노", "price": "250만", "bedrooms": "2", "beds": "3", "bathrooms": "2", "features": "발코니 산악뷰 끝내줌", "url": "https://www.airbnb.co.kr/rooms/1421801906851702421", "img": "https://raw.githubusercontent.com/neoneo3817/travel-vote/main/5.jpg"},
+      {"id": "877667c1-947b-400c-902c-4ef38580a082", "category": "7nights", "name": "6. Pecol 살레", "location": "볼차노", "price": "310만", "bedrooms": "3", "beds": "3", "bathrooms": "2", "features": "발코니 산악뷰 좋음", "url": "https://www.airbnb.co.kr/rooms/45331024", "img": "https://raw.githubusercontent.com/neoneo3817/travel-vote/main/6.jpg"},
+      {"id": "21397231-3e8f-4cef-9ba9-e758bbdbfbe9", "category": "7nights", "name": "7. Sass Dlacia 캠핑장 롯지", "location": "친퀘토리", "price": "300만", "bedrooms": "2", "beds": "2+소파베드1", "bathrooms": "1", "features": "대형 캠핑장 각종 시설 사용 가능", "url": "https://campingsassdlacia.it/en", "img": "https://raw.githubusercontent.com/neoneo3817/travel-vote/main/7.jpg"},
+      {"id": "92b2dcb5-a943-40ca-8b0f-4ccb839b98b3", "category": "7nights", "name": "8. La Villa 아파트 (크레파츠)", "location": "친퀘토리", "price": "210만", "bedrooms": "2", "beds": "3", "bathrooms": "1", "features": "산악뷰 끝내주나 집 뒷편임", "url": "https://www.airbnb.co.kr/rooms/794028618594637814", "img": "https://raw.githubusercontent.com/neoneo3817/travel-vote/main/8.jpg"},
+      {"id": "12f01979-0934-44a7-bedf-efce7f53b4fa", "category": "7nights", "name": "9. San Ciascian 아파트 (알타 바디아)", "location": "친퀘토리", "price": "230만", "bedrooms": "1", "beds": "2", "bathrooms": "1", "features": "마당 잔디밭", "url": "https://www.airbnb.co.kr/rooms/1700733378054490736", "img": "https://raw.githubusercontent.com/neoneo3817/travel-vote/main/9.jpg"},
+      {"id": "48d979b1-a87e-4391-9757-978be329f8cc", "category": "7nights", "name": "10. La Villa 아파트", "location": "친퀘토리", "price": "290만", "bedrooms": "2", "beds": "3", "bathrooms": "1", "features": "발코니 뷰 끝내줌", "url": "https://www.airbnb.co.kr/rooms/31139263", "img": "https://raw.githubusercontent.com/neoneo3817/travel-vote/main/10.jpg"},
+      {"id": "78669d5b-447c-4bb6-b7b7-6ab2b08d2516", "category": "3nights", "name": "11. Fie allo Scillar 아파트 (오팔)", "location": "볼차노", "price": "120만", "bedrooms": "1", "beds": "2+소파베드1", "bathrooms": "1", "features": "정원뷰 좋음+완전 신식", "url": "https://www.airbnb.co.kr/rooms/655454393790746501", "img": "https://raw.githubusercontent.com/neoneo3817/travel-vote/main/11.jpg"},
+      {"id": "00655ed8-28a9-4e71-bea4-aaa295f0ac33", "category": "3nights", "name": "12. Vols am Schlern 아파트", "location": "볼차노", "price": "150만", "bedrooms": "2", "beds": "3+소파베드1", "bathrooms": "2", "features": "부엌 산악뷰. 발코니 없음", "url": "https://www.airbnb.co.kr/rooms/39777287", "img": "https://raw.githubusercontent.com/neoneo3817/travel-vote/main/12.jpg"},
+      {"id": "76a47588-f25b-4678-9be8-8ba3341ae5a7", "category": "3nights", "name": "13. Vols am Schlern 별장", "location": "볼차노", "price": "110만", "bedrooms": "2", "beds": "2+소파베드1", "bathrooms": "1", "features": "별장 전체 마당의 각종 뷰. 시골집 스타일", "url": "https://www.airbnb.co.kr/rooms/707028084921852031", "img": "https://raw.githubusercontent.com/neoneo3817/travel-vote/main/13.jpg"},
+      {"id": "3c4c0521-2afc-41aa-9a5d-cd2a5f703c75", "category": "3nights", "name": "14. Badia 아파트", "location": "친퀘토리", "price": "120만", "bedrooms": "2", "beds": "4", "bathrooms": "2", "features": "광폭 발코니 산악 사이드뷰", "url": "https://www.airbnb.co.kr/rooms/1170131398830189930", "img": "https://raw.githubusercontent.com/neoneo3817/travel-vote/main/14.jpg"},
+      {"id": "ec934309-0aab-4520-be17-eebeef61f877", "category": "3nights", "name": "15. San Ciascian 아파트", "location": "친퀘토리", "price": "160만", "bedrooms": "2", "beds": "3+소파베드1", "bathrooms": "1", "features": "산악 사이드뷰", "url": "https://www.airbnb.co.kr/rooms/914397442379820144", "img": "https://raw.githubusercontent.com/neoneo3817/travel-vote/main/15.jpg"},
+      {"id": "2a49633c-be1a-46e8-afaa-bed818bba89c", "category": "3nights", "name": "Funes 아파트", "location": "볼차노", "price": "130만", "bedrooms": "2", "beds": "3", "bathrooms": "2", "features": "발코니뷰", "url": "https://www.airbnb.co.kr/rooms/996133992242267577?unique_share_id=e43ab4d9-65fc-460d-9048-5f2a8f875b36&viralityEntryPoint=1&s=76", "img": "https://raw.githubusercontent.com/neoneo3817/travel-vote/main/1.jpg"}
+    ];
+
+    // 3차 꼬모 숙소 투표 데이터. Supabase에 꼬모 후보가 등록되면 DB 데이터를 우선 사용합니다.
+    const COMO_DATA = [
+      { id: 'como-1', category: 'como', name: '1. 꼬모 아파트 (시내 핵중심)', location: '꼬모', price: '810유로', bedrooms: '1', beds: '침대 2 + 소파베드', bathrooms: '-', features: '시내 핵중심', url: 'https://www.airbnb.co.kr/rooms/1424662009335158681?unique_share_id=72166468-4880-435c-b846-3dfe569a51e1&viralityEntryPoint=1&s=76', img: 'https://raw.githubusercontent.com/neoneo3817/travel-vote/main/como1.jpg' },
+      { id: 'como-2', category: 'como', name: '2. Valbrona 아파트', location: 'Valbrona', price: '821유로', bedrooms: '-', beds: '침대 3 + 소파베드', bathrooms: '-', features: '너무너무 좋음 / 외짐', url: 'https://www.airbnb.co.kr/rooms/974388641642535494?unique_share_id=b300f813-1fe7-4390-86cb-5bf529455b4c&viralityEntryPoint=1&s=76', img: 'https://raw.githubusercontent.com/neoneo3817/travel-vote/main/como2.jpg' },
+      { id: 'como-3', category: 'como', name: '3. Plesico 집', location: 'Plesico', price: '773유로', bedrooms: '-', beds: '침대 3', bathrooms: '-', features: '아기자기', url: 'https://www.airbnb.co.kr/rooms/1127102722602028570?unique_share_id=46a66096-4b57-4b1f-b04e-55c98f3e46a0&viralityEntryPoint=1&s=76', img: 'https://raw.githubusercontent.com/neoneo3817/travel-vote/main/como3.jpg' },
+      { id: 'como-4', category: 'como', name: '4. Bellano 아파트 (선착장 근처)', location: 'Bellano', price: '647유로', bedrooms: '-', beds: '침대 3 + 소파베드', bathrooms: '-', features: '선착장 근처', url: 'https://www.airbnb.co.kr/rooms/1424726005703260386?unique_share_id=914ec34b-8643-4d5e-b020-a5c3cff3e92e&viralityEntryPoint=1&s=76', img: 'https://raw.githubusercontent.com/neoneo3817/travel-vote/main/como4.jpg' },
+      { id: 'como-5', category: 'como', name: '5. Bellano 아파트 (언덕 위)', location: 'Bellano', price: '720유로', bedrooms: '-', beds: '침대 2 + 소파베드', bathrooms: '-', features: '언덕 위', url: 'https://www.airbnb.co.kr/rooms/1635006073258400031?unique_share_id=69815f38-7512-402e-8904-599488c5d028&viralityEntryPoint=1&s=76', img: 'https://raw.githubusercontent.com/neoneo3817/travel-vote/main/como5.jpg' }
+    ];
+
+
+    // 투표 최종 데이터 (Supabase votes 테이블 내보내기)
+    const VOTES = [
+      {"category": "3nights", "user_name": "고상", "rank_1": "00655ed8-28a9-4e71-bea4-aaa295f0ac33", "rank_2": "1"},
+      {"category": "3nights", "user_name": "고상", "rank_1": "3c4c0521-2afc-41aa-9a5d-cd2a5f703c75", "rank_2": "3"},
+      {"category": "3nights", "user_name": "고상", "rank_1": "76a47588-f25b-4678-9be8-8ba3341ae5a7", "rank_2": "3"},
+      {"category": "3nights", "user_name": "고상", "rank_1": "78669d5b-447c-4bb6-b7b7-6ab2b08d2516", "rank_2": "1"},
+      {"category": "3nights", "user_name": "고상", "rank_1": "ec934309-0aab-4520-be17-eebeef61f877", "rank_2": "1"},
+      {"category": "3nights", "user_name": "란", "rank_1": "00655ed8-28a9-4e71-bea4-aaa295f0ac33", "rank_2": "2"},
+      {"category": "3nights", "user_name": "란", "rank_1": "3c4c0521-2afc-41aa-9a5d-cd2a5f703c75", "rank_2": "3"},
+      {"category": "3nights", "user_name": "란", "rank_1": "76a47588-f25b-4678-9be8-8ba3341ae5a7", "rank_2": "2"},
+      {"category": "3nights", "user_name": "란", "rank_1": "78669d5b-447c-4bb6-b7b7-6ab2b08d2516", "rank_2": "1"},
+      {"category": "3nights", "user_name": "란", "rank_1": "ec934309-0aab-4520-be17-eebeef61f877", "rank_2": "2"},
+      {"category": "3nights", "user_name": "지현", "rank_1": "00655ed8-28a9-4e71-bea4-aaa295f0ac33", "rank_2": "1"},
+      {"category": "3nights", "user_name": "지현", "rank_1": "3c4c0521-2afc-41aa-9a5d-cd2a5f703c75", "rank_2": "2"},
+      {"category": "3nights", "user_name": "지현", "rank_1": "76a47588-f25b-4678-9be8-8ba3341ae5a7", "rank_2": "2"},
+      {"category": "3nights", "user_name": "지현", "rank_1": "78669d5b-447c-4bb6-b7b7-6ab2b08d2516", "rank_2": "2"},
+      {"category": "3nights", "user_name": "지현", "rank_1": "ec934309-0aab-4520-be17-eebeef61f877", "rank_2": "1"},
+      {"category": "7nights", "user_name": "고상", "rank_1": "12f01979-0934-44a7-bedf-efce7f53b4fa", "rank_2": "2"},
+      {"category": "7nights", "user_name": "고상", "rank_1": "21397231-3e8f-4cef-9ba9-e758bbdbfbe9", "rank_2": "3"},
+      {"category": "7nights", "user_name": "고상", "rank_1": "48d979b1-a87e-4391-9757-978be329f8cc", "rank_2": "2"},
+      {"category": "7nights", "user_name": "고상", "rank_1": "5a8b0ef2-c608-4963-9bed-1faf5b5405d9", "rank_2": "2"},
+      {"category": "7nights", "user_name": "고상", "rank_1": "5a9e1db3-b60b-402f-8c32-107e4cf9714e", "rank_2": "3"},
+      {"category": "7nights", "user_name": "고상", "rank_1": "6091e6f2-4a6f-451f-8390-eb52da1b7cbf", "rank_2": "3"},
+      {"category": "7nights", "user_name": "고상", "rank_1": "877667c1-947b-400c-902c-4ef38580a082", "rank_2": "3"},
+      {"category": "7nights", "user_name": "고상", "rank_1": "92b2dcb5-a943-40ca-8b0f-4ccb839b98b3", "rank_2": "1"},
+      {"category": "7nights", "user_name": "고상", "rank_1": "cfab19bb-d0a3-481c-9b35-7812afe89332", "rank_2": "2"},
+      {"category": "7nights", "user_name": "고상", "rank_1": "fc30e0d5-c589-48dc-83c7-f6b41908b3a1", "rank_2": "1"},
+      {"category": "7nights", "user_name": "란", "rank_1": "12f01979-0934-44a7-bedf-efce7f53b4fa", "rank_2": "1"},
+      {"category": "7nights", "user_name": "란", "rank_1": "21397231-3e8f-4cef-9ba9-e758bbdbfbe9", "rank_2": "2"},
+      {"category": "7nights", "user_name": "란", "rank_1": "48d979b1-a87e-4391-9757-978be329f8cc", "rank_2": "3"},
+      {"category": "7nights", "user_name": "란", "rank_1": "5a8b0ef2-c608-4963-9bed-1faf5b5405d9", "rank_2": "3"},
+      {"category": "7nights", "user_name": "란", "rank_1": "5a9e1db3-b60b-402f-8c32-107e4cf9714e", "rank_2": "3"},
+      {"category": "7nights", "user_name": "란", "rank_1": "6091e6f2-4a6f-451f-8390-eb52da1b7cbf", "rank_2": "2"},
+      {"category": "7nights", "user_name": "란", "rank_1": "877667c1-947b-400c-902c-4ef38580a082", "rank_2": "2"},
+      {"category": "7nights", "user_name": "란", "rank_1": "92b2dcb5-a943-40ca-8b0f-4ccb839b98b3", "rank_2": "1"},
+      {"category": "7nights", "user_name": "란", "rank_1": "fc30e0d5-c589-48dc-83c7-f6b41908b3a1", "rank_2": "2"},
+      {"category": "7nights", "user_name": "지현", "rank_1": "12f01979-0934-44a7-bedf-efce7f53b4fa", "rank_2": "1"},
+      {"category": "7nights", "user_name": "지현", "rank_1": "21397231-3e8f-4cef-9ba9-e758bbdbfbe9", "rank_2": "2"},
+      {"category": "7nights", "user_name": "지현", "rank_1": "48d979b1-a87e-4391-9757-978be329f8cc", "rank_2": "3"},
+      {"category": "7nights", "user_name": "지현", "rank_1": "5a8b0ef2-c608-4963-9bed-1faf5b5405d9", "rank_2": "2"},
+      {"category": "7nights", "user_name": "지현", "rank_1": "5a9e1db3-b60b-402f-8c32-107e4cf9714e", "rank_2": "3"},
+      {"category": "7nights", "user_name": "지현", "rank_1": "6091e6f2-4a6f-451f-8390-eb52da1b7cbf", "rank_2": "2"},
+      {"category": "7nights", "user_name": "지현", "rank_1": "877667c1-947b-400c-902c-4ef38580a082", "rank_2": "3"},
+      {"category": "7nights", "user_name": "지현", "rank_1": "92b2dcb5-a943-40ca-8b0f-4ccb839b98b3", "rank_2": "2"},
+      {"category": "7nights", "user_name": "지현", "rank_1": "cfab19bb-d0a3-481c-9b35-7812afe89332", "rank_2": "1"},
+      {"category": "7nights", "user_name": "지현", "rank_1": "fc30e0d5-c589-48dc-83c7-f6b41908b3a1", "rank_2": "1"},
+      {"category": "como", "user_name": "고상", "rank_1": "como-1", "rank_2": "2"},
+      {"category": "como", "user_name": "고상", "rank_1": "como-2", "rank_2": "2"},
+      {"category": "como", "user_name": "고상", "rank_1": "como-3", "rank_2": "3"},
+      {"category": "como", "user_name": "고상", "rank_1": "como-4", "rank_2": "1"},
+      {"category": "como", "user_name": "고상", "rank_1": "como-5", "rank_2": "3"},
+      {"category": "como", "user_name": "란", "rank_1": "como-1", "rank_2": "2"},
+      {"category": "como", "user_name": "란", "rank_1": "como-2", "rank_2": "3"},
+      {"category": "como", "user_name": "란", "rank_1": "como-3", "rank_2": "2"},
+      {"category": "como", "user_name": "란", "rank_1": "como-4", "rank_2": "1"},
+      {"category": "como", "user_name": "란", "rank_1": "como-5", "rank_2": "3"},
+      {"category": "como", "user_name": "지현", "rank_1": "como-1", "rank_2": "2"},
+      {"category": "como", "user_name": "지현", "rank_1": "como-2", "rank_2": "2"},
+      {"category": "como", "user_name": "지현", "rank_1": "como-3", "rank_2": "1"},
+      {"category": "como", "user_name": "지현", "rank_1": "como-4", "rank_2": "2"},
+      {"category": "como", "user_name": "지현", "rank_1": "como-5", "rank_2": "3"},
+      {"category": "final", "user_name": "고상", "rank_1": "combo_1", "rank_2": "1"},
+      {"category": "final", "user_name": "고상", "rank_1": "combo_2", "rank_2": "3"},
+      {"category": "final", "user_name": "고상", "rank_1": "combo_3", "rank_2": "2"},
+      {"category": "final", "user_name": "란", "rank_1": "combo_1", "rank_2": "1"},
+      {"category": "final", "user_name": "란", "rank_1": "combo_2", "rank_2": "2"},
+      {"category": "final", "user_name": "란", "rank_1": "combo_3", "rank_2": "3"},
+      {"category": "final", "user_name": "지현", "rank_1": "combo_1", "rank_2": "2"},
+      {"category": "final", "user_name": "지현", "rank_1": "combo_2", "rank_2": "3"},
+      {"category": "final", "user_name": "지현", "rank_1": "combo_3", "rank_2": "1"}
+    ];
+
+    const accommodations = [...FINAL_COMBOS, ...ACC_DATA, ...COMO_DATA];
+    let currentCategory = 'como';
+    const TITLES = { como: '🇮🇹 3차 투표 · 꼬모 숙소 후보', final: '🏆 결선 투표 조합 리스트', '7nights': '🏡 7박 숙소 후보', '3nights': '🏡 3박 숙소 후보' };
+
+    window.addEventListener('DOMContentLoaded', () => switchCategory('como'));
+
+    function switchCategory(cat) {
+      currentCategory = cat;
+      const tabIds = { como: 'tabComo', final: 'tabFinal', '7nights': 'tab7nights', '3nights': 'tab3nights' };
+      Object.entries(tabIds).forEach(([k, id]) => {
+        document.getElementById(id).className = "flex-1 py-3 font-bold text-center border-b-2 cursor-pointer text-xs md:text-sm " +
+          (k === cat ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-500 hover:text-slate-700");
+      });
+      document.getElementById('listTitle').innerText = TITLES[cat];
+      document.getElementById('boardTitle').innerText = cat === 'final' ? "📊 참가자별 선호 순위 결과" : "📊 최종 총점";
+      renderAccommodations();
+      renderResults();
+    }
+
+    function renderAccommodations() {
+      const listEl = document.getElementById('accommodationsList');
+      const filtered = accommodations.filter(item => item.category === currentCategory);
+      if (currentCategory === 'final') {
+        listEl.innerHTML = filtered.map(item => `
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-3">
+            <div><span class="text-xs font-semibold px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded mr-2">${item.location}</span>
+              <h3 class="font-bold text-base text-slate-800 inline">${item.name}</h3></div>
+            <div class="bg-slate-50 p-3 rounded-lg space-y-1 text-xs">
+              <div><span class="font-semibold text-slate-700">📌 7박 숙소:</span> <a href="${item.acc1_url}" target="_blank" class="text-indigo-600 hover:underline font-bold">${item.acc1_name} 🔗</a></div>
+              <div><span class="font-semibold text-slate-700">📌 3박 숙소:</span> <a href="${item.acc2_url}" target="_blank" class="text-indigo-600 hover:underline font-bold">${item.acc2_name} 🔗</a></div>
+            </div>
+            <p class="text-xs text-amber-700 bg-amber-50 p-2.5 rounded font-semibold">${item.notes}</p>
+          </div>`).join('');
+      } else {
+        listEl.innerHTML = filtered.map(item => `
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="w-full aspect-[4/3] bg-slate-100 overflow-hidden"><img src="${item.img}" alt="${item.name}" class="w-full h-full object-cover"></div>
+            <div class="p-4 space-y-2">
+              <div class="flex justify-between items-start">
+                <div><span class="text-xs font-semibold px-2 py-0.5 bg-slate-100 text-slate-600 rounded mr-2">${item.location || '위치'}</span>
+                  ${item.url ? `<a href="${item.url}" target="_blank" class="font-bold text-base text-slate-800 hover:text-indigo-600 hover:underline inline">${item.name} 🔗</a>` : `<h3 class="font-bold text-base text-slate-800 inline">${item.name}</h3>`}</div>
+                <span class="text-indigo-600 font-bold text-sm">${item.price || '가격문의'}</span>
+              </div>
+              <p class="text-xs text-slate-600 bg-slate-50 p-2 rounded">✨ ${item.features || '특이사항 없음'}</p>
+              <div class="text-xs text-slate-500">🛏️ 침실 ${item.bedrooms || '-'} | 침대 ${item.beds || '-'} | 🚿 화장실 ${item.bathrooms || '-'}</div>
+            </div>
+          </div>`).join('');
+      }
+    }
+
+    function renderResults() {
+      const board = document.getElementById('resultsBoard');
+      const categoryVotes = VOTES.filter(v => v.category === currentCategory);
+
+      if (currentCategory === 'final') {
+        const userMap = {};
+        categoryVotes.forEach(v => {
+          (userMap[v.user_name] = userMap[v.user_name] || []).push({
+            rank: parseInt(v.rank_2) || 99,
+            name: (FINAL_COMBOS.find(c => c.id === v.rank_1) || { name: v.rank_1 }).name
+          });
+        });
+        const users = Object.keys(userMap);
+        board.innerHTML = `<div class="text-xs text-slate-500 mb-3">총 결선 참여: <span class="font-bold text-indigo-600">${users.length}명</span></div>` +
+          users.map(u => `
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1.5">
+              <div class="font-bold text-xs text-indigo-700">👤 ${u}</div>
+              ${userMap[u].sort((a, b) => a.rank - b.rank).map(i => `
+                <div class="flex items-center justify-between bg-white px-2.5 py-1 rounded border border-slate-100 text-xs">
+                  <span class="text-[10px] px-1.5 py-0.5 rounded text-white font-bold ${i.rank === 1 ? 'bg-amber-500' : i.rank === 2 ? 'bg-slate-500' : 'bg-amber-800'}">${i.rank}순위</span>
+                  <span class="font-semibold text-slate-800">${i.name}</span>
+                </div>`).join('')}
+            </div>`).join('');
+        return;
+      }
+
+      const filteredAcc = accommodations.filter(a => a.category === currentCategory);
+      const scores = {};
+      filteredAcc.forEach(a => scores[a.id] = 0);
+      let unmatched = 0;
+      categoryVotes.forEach(v => {
+        const id = v.rank_1;
+        if (scores[id] === undefined) { unmatched++; return; }
+        scores[id] += parseInt(v.rank_2) || 0;
+      });
+      const uniqueUsers = new Set(categoryVotes.map(v => v.user_name)).size;
+      const sorted = filteredAcc.map(a => ({ ...a, score: scores[a.id] })).sort((a, b) => b.score - a.score);
+      const maxScore = Math.max(...sorted.map(s => s.score), 1);
+
+      board.innerHTML = `<div class="text-xs text-slate-500 mb-2">총 평가 참여: <span class="font-bold text-indigo-600">${uniqueUsers}명</span></div>` +
+        (unmatched ? `<div class="text-xs text-rose-600 bg-rose-50 p-2 rounded">⚠️ 숙소와 연결되지 않은 투표 ${unmatched}건</div>` : '') +
+        sorted.map((item, idx) => `
+          <div class="space-y-1">
+            <div class="flex justify-between text-xs font-semibold">
+              <span class="truncate max-w-[150px]">${idx === 0 && item.score > 0 ? '👑 ' : ''}${item.name}</span>
+              <span class="text-indigo-600 font-bold">${item.score}점</span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden"><div class="bg-indigo-600 h-2 rounded-full" style="width: ${(item.score / maxScore) * 100}%"></div></div>
+          </div>`).join('');
+    }
+  </script>
+</body>
+</html>
